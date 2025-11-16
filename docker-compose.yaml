@@ -1,0 +1,24 @@
+services:
+  dovecot-a:
+    image: dovecot/dovecot:2.4.2-dev
+    container_name: dovecot-a
+    ports:
+      - name: imap
+        protocol: tcp
+        published: 8143
+        target: 31143
+    volumes:
+      - ./hack/dovecot-a.conf:/etc/dovecot/conf.d/dovecot-a.conf:ro
+      - ./hack/dovecot-shared.conf:/etc/dovecot/conf.d/dovecot-shared.conf:ro
+  dovecot-b:
+    image: dovecot/dovecot:2.4.2-dev
+    container_name: dovecot-b
+    ports:
+      - name: imap
+        protocol: tcp
+        published: 9143
+        target: 31143
+    volumes:
+      - ./hack/dovecot-b.conf:/etc/dovecot/conf.d/dovecot-b.conf:ro
+      - ./hack/dovecot-shared.conf:/etc/dovecot/conf.d/dovecot-shared.conf:ro
+
