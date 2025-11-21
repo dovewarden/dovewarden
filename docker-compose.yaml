@@ -1,4 +1,15 @@
 services:
+  dovecot-test:
+    image: dovecot/dovecot:2.4.2-dev
+    container_name: dovecot-test
+    command:
+      - /usr/bin/tail
+      - -f
+      - /dev/null
+    volumes:
+      - ./hack/imap-scripts:/opt/imap-scripts
+      - ./hack/mbox:/opt/mbox
+
   dovecot-a:
     image: dovecot/dovecot:2.4.2-dev
     container_name: dovecot-a

@@ -1,0 +1,6 @@
+capabilities: CHILDREN LIST-EXTENDED
+connections: 1
+state: auth
+
+ok select $mailbox
+* 0 exists
