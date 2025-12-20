@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+set: [errexit, nounset, pipefail]
+
+tasks:
+  check:
+    desc: Run all checks (lint, fmt, test)
+    cmds:
+      - task: lint
+      - task: fmt
+      - task: test
+      - task: git
+
+  lint:
+    desc: Run linters
+    cmds:
+      - task: lint:golangci-lint
+
+  fmt:
+    desc: Run code formatters
+    cmds:
+      - task: fmt:golangci-lint
+
+  test:
+    desc: Run tests
+    cmds:
+      - task: go:test
+
+  git:
+    vars:
+      git_status:
+        sh: git status --porcelain
+    desc: Verify if git working tree is clean
+    silent: true
+    cmds:
+    - test -z "{{.git_status}}" || (echo -e "Git working tree is not clean:\n\n{{.git_status}}\n\nPlease commit or stash your changes." && exit 1)
+
+  lint:golangci-lint:
+    desc: Run golangci-lint
+    silent: true
+    cmds:
+    - mkdir -p $(go env GOCACHE) $(go env GOMODCACHE) ~/.cache/golangci-lint
+    - |
+      docker run --rm -t -v $(pwd):/app -w /app \
+      --user $(id -u):$(id -g) \
+      -v ~/.cache/golangci-lint:/.cache -e GOLANGCI_LINT_CACHE=/.cache/golangci-lint \
+      -v $(go env GOCACHE):/.cache/go-build -e GOCACHE=/.cache/go-build \
+      -v $(go env GOMODCACHE):/.cache/mod -e GOMODCACHE=/.cache/mod \
+      golangci/golangci-lint:v2.7.2 golangci-lint run
+
+  fmt:golangci-lint:
+    desc: Run gofmt via golangci-lint
+    silent: true
+    cmds:
+    - mkdir -p $(go env GOCACHE) $(go env GOMODCACHE) ~/.cache/golangci-lint
+    - |
+      docker run --rm -t -v $(pwd):/app -w /app \
+      --user $(id -u):$(id -g) \
+      -v ~/.cache/golangci-lint:/.cache -e GOLANGCI_LINT_CACHE=/.cache/golangci-lint \
+      -v $(go env GOCACHE):/.cache/go-build -e GOCACHE=/.cache/go-build \
+      -v $(go env GOMODCACHE):/.cache/mod -e GOMODCACHE=/.cache/mod \
+      golangci/golangci-lint:v2.7.2 golangci-lint fmt
+
+  go:test:
+    desc: Run go tests
+    cmds:
+    - go test -v ./...
