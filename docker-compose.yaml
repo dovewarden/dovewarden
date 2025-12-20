@@ -18,6 +18,10 @@ services:
         protocol: tcp
         published: 8143
         target: 31143
+      - name: lmtp
+        protocol: tcp
+        published: 30024
+        target: 30024
     volumes:
       - ./hack/dovecot-a.conf:/etc/dovecot/conf.d/dovecot-a.conf:ro
       - ./hack/dovecot-shared.conf:/etc/dovecot/conf.d/dovecot-shared.conf:ro
