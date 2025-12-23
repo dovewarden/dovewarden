@@ -1,24 +1,126 @@
-# Project Lightfeather
+# Lightfeather
 
-`lightfeather` implements an external replication management daemon for Dovecot servers, resembling the feature removed in Dovecot 2.4. It receives event notifications when mailboxes are modified through the HTTP event API, stores these in a priority queue in Redis, and uses the doveadm HTTP API to trigger replications to the remote Dovecot server.
+A lightweight event processor for Dovecot's event API. Receives IMAP command events, filters them, and enqueues them in a priority queue for asynchronous processing.
 
 ## Features
 
-- **Event-Driven Replication**: Listens for mailbox modification events from Dovecot and triggers replication accordingly.
-- **Supported Protocols**:
-  - **IMAP**, relying on the same notification events Dovecot 2.3 was using.
-  - ~~**Sieve**~~ can be added in the future
-  - ~~**POP3**~~ can be added in the future
-- **Persistent priority queue**: Utilizes Redis to maintain a priority queue for replication tasks.
-  - allows persistent storage of replication tasks also across daemon restarts
-  - allows highly available (and scaling out, if that is ever required) setups with multiple `lightfeather` instances sharing the same Redis backend, not strictly requiring complete reconciliation on Dovecot startup
-  - retry mechanism for failed replications
-  - background reconciliation of all users to ensure consistency also without events
+- **HTTP Event Receiver**: Accepts JSON events from Dovecot's event API
+- **Event Filtering**: Passes only `imap_command_finished` events
+- **Priority Queue**: Events stored in a Redis-compatible sorted set per username
+- **In-Memory Development Mode**: Uses miniredis for zero-dependency local development
+- **Prometheus Metrics**: Full instrumentation for monitoring
+- **Separate ports for events and metrics**
+- **Health/Readiness Probes**: `/healthz` and `/readyz` on the metrics port
+- **Graceful Shutdown**: Drains HTTP servers with timeouts
 
 ## Architecture
 
-The architecture of `lightfeather` consists of the following components:
+### Event Flow
 
-- **Dovecot Server**: The primary mail server where mailboxes are hosted. It is configured to send HTTP event notifications to the `lightfeather` daemon whenever a mailbox is modified.
-- **lightfeather daemon**: The core component written in Golang listens for HTTP event notifications from the Dovecot server. It processes these notifications and stores them in a priority queue in Redis.
-- **Redis**: A fast, in-memory data structure store used as a priority queue to manage replication tasks. `lightfeather` uses Redis to store and retrieve replication tasks efficiently.
+```
+Dovecot Event API
+       ↓
+   POST /events  (default :8080)
+       ↓
+   Filter (imap_command_finished only)
+       ↓
+   Priority Queue (Redis sorted set per username)
+       ↓
+   Metrics update (scraped from :9090/metrics)
+```
+
+### Components
+
+- **Config** (`internal/config`): Configuration from environment variables or CLI flags
+- **Events** (`internal/events`): Event parsing and filtering logic
+- **Queue** (`internal/queue`): Redis-compatible queue abstraction with miniredis backend
+- **Metrics** (`internal/metrics`): Prometheus instrumentation
+- **Server** (`internal/server`): HTTP endpoint for events
+
+## Configuration
+
+Environment variables (with CLI flag overrides):
+
+- `LF_HTTP_ADDR` (`--http-addr`): HTTP server listen address for events (default: `:8080`)
+- `LF_METRICS_ADDR` (`--metrics-addr`): HTTP server listen address for Prometheus metrics (default: `:9090`)
+- `LF_REDIS_MODE` (`--redis-mode`): Redis mode: `inmemory` or `external` (default: `inmemory`)
+- `LF_REDIS_ADDR` (`--redis-addr`): Redis server address for external mode (default: `localhost:6379`)
+- `LF_NAMESPACE` (`--namespace`): Key namespace prefix for queue keys (default: `lf`)
+
+## API Endpoints
+
+- Events server (default `:8080`)
+  - POST `/events`
+    - `202 Accepted`: Event successfully enqueued
+    - `204 No Content`: Event filtered out (not matching criteria)
+    - `400 Bad Request`: Malformed JSON or missing required fields
+    - `500 Internal Server Error`: Enqueue or queue operation failed
+
+- Metrics server (default `:9090`)
+  - GET `/metrics` (Prometheus text format)
+  - GET `/healthz` (liveness)
+    - Always returns `200 OK` when the process is running
+  - GET `/readyz` (readiness)
+    - Returns `503 Service Unavailable` until the events listener is bound
+    - Returns `503` if the queue backend health check fails
+    - Returns `200 OK` when ready and healthy
+
+## Dovecot Event Payload
+
+Events must be sent as JSON POST requests to `/events`:
+
+```json
+{
+  "event": "imap_command_finished",
+  "username": "user@example.com",
+  "timestamp": "2024-12-20T10:30:45Z"
+}
+```
+
+Only events with `event: "imap_command_finished"` are accepted. The `username` field is used as the queue key.
+
+## Prometheus Metrics
+
+- `lightfeather_events_received_total`: Counter of all received events
+- `lightfeather_events_filtered_total`: Counter of events passing the filter
+- `lightfeather_events_enqueued_total`: Counter of events successfully enqueued
+- `lightfeather_enqueue_errors_total`: Counter of enqueue failures
+- `lightfeather_queue_size{username="..."}`: Current queue size per username
+- `lightfeather_redis_errors_total`: Counter of Redis operation errors
+
+## Development & Local Testing
+
+### Run Locally (In-Memory Mode)
+
+```bash
+go build -o lightfeather ./cmd/lightfeather
+./lightfeather --http-addr :8080 --metrics-addr :9090
+```
+
+### Test Event Submission (events port)
+
+```bash
+curl -X POST http://localhost:8080/events \
+  -H "Content-Type: application/json" \
+  -d '{"event":"imap_command_finished","username":"testuser","timestamp":"2024-12-20T10:30:45Z"}'
+```
+
+### View Metrics and Probes (metrics port)
+
+```bash
+curl http://localhost:9090/metrics
+curl -i http://localhost:9090/healthz
+curl -i http://localhost:9090/readyz
+```
+
+## Graceful Shutdown
+
+The application listens for SIGINT/SIGTERM and gracefully shuts down both the events and metrics HTTP servers with a 5-second timeout.
+
+## Future Extensions
+
+- **Priority by Event Reason**: Extend priority calculation based on event reason/command type
+- **External Redis Support**: Implement external Redis backend for production deployments
+- **Dequeue Operations**: Implement queue draining/worker logic in next phase
+- **Event Enrichment**: Add additional context to queued events (request IDs, durations, etc.)
+- **Rate Limiting**: Add rate limiting per username to prevent queue saturation
