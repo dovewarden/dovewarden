@@ -9,11 +9,17 @@ var (
 	ErrEmptyEvent       = errors.New("event field is empty")
 	ErrEmptyUsername    = errors.New("username field is empty")
 	ErrInvalidEventType = errors.New("event type not accepted by filter")
+	ErrInvalidCmdName   = errors.New("cmd_name not accepted by filter")
 )
 
 // AcceptedEvents is the list of event types that pass the filter.
 var AcceptedEvents = map[string]bool{
 	"imap_command_finished": true,
+}
+
+// AcceptedCmdNames is the list of IMAP commands that should be queued.
+var AcceptedCmdNames = map[string]bool{
+	"APPEND": true,
 }
 
 // Filter validates and filters incoming events.
@@ -28,17 +34,22 @@ func Filter(data []byte) (*FilteredEvent, error) {
 		return nil, ErrEmptyEvent
 	}
 
-	if evt.Username == "" {
-		return nil, ErrEmptyUsername
-	}
-
 	if !AcceptedEvents[evt.Event] {
 		return nil, ErrInvalidEventType
 	}
 
+	if evt.Fields.User == "" {
+		return nil, ErrEmptyUsername
+	}
+
+	if !AcceptedCmdNames[evt.Fields.CmdName] {
+		return nil, ErrInvalidCmdName
+	}
+
 	return &FilteredEvent{
 		Event:    evt.Event,
-		Username: evt.Username,
+		Username: evt.Fields.User,
+		CmdName:  evt.Fields.CmdName,
 		Raw:      evt,
 	}, nil
 }

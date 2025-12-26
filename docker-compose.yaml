@@ -1,7 +1,14 @@
+networks:
+  mybridge:
+    name: mybridge
+    driver: bridge
+
 services:
   dovecot-test:
     image: dovecot/dovecot:2.4.2-dev
     container_name: dovecot-test
+    networks:
+    - mybridge
     command:
       - /usr/bin/tail
       - -f
@@ -13,6 +20,11 @@ services:
   dovecot-a:
     image: dovecot/dovecot:2.4.2-dev
     container_name: dovecot-a
+    networks:
+    - mybridge
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "myhost:172.17.0.1"
     ports:
       - name: imap
         protocol: tcp
@@ -29,6 +41,8 @@ services:
   dovecot-b:
     image: dovecot/dovecot:2.4.2-dev
     container_name: dovecot-b
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - name: imap
         protocol: tcp
