@@ -2,8 +2,8 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/JensErat/lightfeather/internal/events"
@@ -39,7 +39,8 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to read request body: %v", err), http.StatusBadRequest)
+		slog.Error("failed to read request body", "error", err)
+		http.Error(w, "failed to read request body", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
@@ -47,21 +48,23 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	// Filter the event
 	filtered, err := events.Filter(body)
 	if err != nil {
-		// Log rejection (future: structured logging)
-		// TODO instrument rejection metrics, including information on rejected event kind
+		slog.Warn("event ignored", "reason", err.Error(), "body", string(body))
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
 	s.metrics.EventsFiltered.Inc()
 
+	slog.Info("event accepted", "username", filtered.Username, "cmd", filtered.CmdName, "event_type", filtered.Event)
+
 	// Enqueue the event with static priority
 	eventJSON, _ := json.Marshal(filtered.Raw)
 	staticPriority := 1.0 // Static priority for now; will be extended per event type later
 
 	if err := s.queue.Enqueue(r.Context(), filtered.Username, string(eventJSON), staticPriority); err != nil {
+		slog.Error("failed to enqueue event", "username", filtered.Username, "error", err)
 		s.metrics.EnqueueErrors.Inc()
-		http.Error(w, fmt.Sprintf("failed to enqueue event: %v", err), http.StatusInternalServerError)
+		http.Error(w, "failed to enqueue event", http.StatusInternalServerError)
 		return
 	}
 

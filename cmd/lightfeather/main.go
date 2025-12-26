@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -20,10 +21,34 @@ import (
 )
 
 func main() {
+	// Initialize structured logging
+	// LOG_FORMAT environment variable controls output: "json" or "text" (default)
+	logFormat := strings.ToLower(os.Getenv("LOG_FORMAT"))
+	var logger *slog.Logger
+
+	opts := &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelInfo,
+	}
+
+	if logFormat == "json" {
+		handler := slog.NewJSONHandler(os.Stdout, opts)
+		logger = slog.New(handler)
+	} else {
+		handler := slog.NewTextHandler(os.Stdout, opts)
+		logger = slog.New(handler)
+	}
+
+	slog.SetDefault(logger)
+
 	// Load configuration
 	cfg := config.Load()
-	log.Printf("Starting lightfeather with config: HTTPAddr=%s, MetricsAddr=%s, RedisMode=%s, Namespace=%s\n",
-		cfg.HTTPAddr, cfg.MetricsAddr, cfg.RedisMode, cfg.Namespace)
+	slog.Info("Starting lightfeather",
+		"http_addr", cfg.HTTPAddr,
+		"metrics_addr", cfg.MetricsAddr,
+		"redis_mode", cfg.RedisMode,
+		"namespace", cfg.Namespace,
+	)
 
 	// Initialize metrics with default prometheus registry
 	m := metrics.New(prometheus.DefaultRegisterer)
@@ -33,18 +58,20 @@ func main() {
 	var err error
 
 	if cfg.RedisMode == "inmemory" {
-		log.Println("Initializing in-memory Redis queue")
+		slog.Info("Initializing in-memory Redis queue")
 		q, err = queue.NewInMemoryQueue(cfg.Namespace)
 		if err != nil {
-			log.Fatalf("failed to create in-memory queue: %v\n", err)
+			slog.Error("failed to create in-memory queue", "error", err)
+			os.Exit(1)
 		}
 	} else {
-		log.Fatalf("Redis mode %q not yet implemented\n", cfg.RedisMode)
+		slog.Error("Redis mode not yet implemented", "mode", cfg.RedisMode)
+		os.Exit(1)
 	}
 
 	defer func() {
 		if err := q.Close(); err != nil {
-			log.Printf("error closing queue: %v\n", err)
+			slog.Error("error closing queue", "error", err)
 		}
 	}()
 
@@ -81,24 +108,25 @@ func main() {
 	// Bind event listener before serving; mark ready only after bind success
 	ln, err := net.Listen("tcp", cfg.HTTPAddr)
 	if err != nil {
-		log.Fatalf("failed to bind events listener on %s: %v\n", cfg.HTTPAddr, err)
+		slog.Error("failed to bind events listener", "addr", cfg.HTTPAddr, "error", err)
+		os.Exit(1)
 	}
 
 	// Start servers in goroutines
 	done := make(chan struct{}, 2)
 	go func() {
-		log.Printf("Events HTTP server listening on %s\n", cfg.HTTPAddr)
+		slog.Info("Events HTTP server listening", "addr", cfg.HTTPAddr)
 		atomic.StoreUint32(&readyFlag, 1)
 		if err := eventsHTTP.Serve(ln); err != nil && err != http.ErrServerClosed {
-			log.Printf("events server error: %v\n", err)
+			slog.Error("events server error", "error", err)
 		}
 		done <- struct{}{}
 	}()
 
 	go func() {
-		log.Printf("Metrics HTTP server listening on %s\n", cfg.MetricsAddr)
+		slog.Info("Metrics HTTP server listening", "addr", cfg.MetricsAddr)
 		if err := metricsHTTP.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Printf("metrics server error: %v\n", err)
+			slog.Error("metrics server error", "error", err)
 		}
 		done <- struct{}{}
 	}()
@@ -107,17 +135,17 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-sigChan
-	log.Printf("Shutdown signal received (%v), closing...\n", sig)
+	slog.Info("Shutdown signal received", "signal", sig.String())
 
 	// Graceful shutdown
 	atomic.StoreUint32(&readyFlag, 0)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := eventsHTTP.Shutdown(ctx); err != nil {
-		log.Printf("error shutting down events server: %v\n", err)
+		slog.Error("error shutting down events server", "error", err)
 	}
 	if err := metricsHTTP.Shutdown(ctx); err != nil {
-		log.Printf("error shutting down metrics server: %v\n", err)
+		slog.Error("error shutting down metrics server", "error", err)
 	}
 
 	// Wait for goroutines to exit or timeout
