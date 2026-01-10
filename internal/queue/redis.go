@@ -9,6 +9,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const SYNC_TASKS = "sync_tasks"
+
 // InMemoryQueue is a Redis-compatible queue using miniredis for development and testing.
 type InMemoryQueue struct {
 	server *miniredis.Miniredis
@@ -42,17 +44,18 @@ func NewInMemoryQueue(namespace string) (*InMemoryQueue, error) {
 	}, nil
 }
 
-// Enqueue adds an event to the priority queue for the given username.
+// Enqueue adds or updates a user to the priority queue.
 // Uses a sorted set with the current timestamp as the score (lower score = higher priority initially).
+// A user's priority is only updated if the new score is lower than the existing score (must be synced sooner).
 func (q *InMemoryQueue) Enqueue(ctx context.Context, username string, eventData string, priority float64) error {
-	key := fmt.Sprintf("%s:%s", q.ns, username)
+	key := fmt.Sprintf("%s:%s", q.ns, SYNC_TASKS)
 
 	// Use current timestamp as initial score; priority parameter reserved for future use
 	score := float64(time.Now().UnixNano()) / 1e9
 
-	if err := q.client.ZAdd(ctx, key, redis.Z{
+	if err := q.client.ZAddLT(ctx, key, redis.Z{
 		Score:  score,
-		Member: eventData,
+		Member: username,
 	}).Err(); err != nil {
 		return fmt.Errorf("failed to enqueue event: %w", err)
 	}
