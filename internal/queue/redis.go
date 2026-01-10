@@ -56,7 +56,7 @@ func NewInMemoryQueue(namespace string, addr string) (*InMemoryQueue, error) {
 // A user's priority is only updated if the new score is lower than the existing score (must be synced sooner).
 // The queue priority is determined by the timestamp the event was enqueued, divided by the priorityFactor (higher
 // factor will result in user being dequeued sooner).
-func (q *InMemoryQueue) Enqueue(ctx context.Context, username string, eventData string, priorityFactor float64) error {
+func (q *InMemoryQueue) Enqueue(ctx context.Context, username string, priorityFactor float64) error {
 	key := fmt.Sprintf("%s:%s", q.ns, SYNC_TASKS)
 
 	// Use current timestamp as initial score; priority parameter reserved for future use

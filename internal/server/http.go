@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -58,10 +57,9 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	slog.Info("event accepted", "username", filtered.Username, "cmd", filtered.CmdName, "event_type", filtered.Event)
 
 	// Enqueue the event with static priority
-	eventJSON, _ := json.Marshal(filtered.Raw)
 	staticPriority := 1.0 // Static priority for now; will be extended per event type later
 
-	if err := s.queue.Enqueue(r.Context(), filtered.Username, string(eventJSON), staticPriority); err != nil {
+	if err := s.queue.Enqueue(r.Context(), filtered.Username, staticPriority); err != nil {
 		slog.Error("failed to enqueue event", "username", filtered.Username, "error", err)
 		s.metrics.EnqueueErrors.Inc()
 		http.Error(w, "failed to enqueue event", http.StatusInternalServerError)
