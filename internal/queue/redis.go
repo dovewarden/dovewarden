@@ -19,10 +19,17 @@ type InMemoryQueue struct {
 }
 
 // NewInMemoryQueue creates a new in-memory Redis queue.
-func NewInMemoryQueue(namespace string) (*InMemoryQueue, error) {
+// addr parameter allows specifying the address for miniredis (for testing).
+func NewInMemoryQueue(namespace string, addr string) (*InMemoryQueue, error) {
 	s := miniredis.NewMiniRedis()
-	if err := s.Start(); err != nil {
-		return nil, fmt.Errorf("failed to start miniredis: %w", err)
+	if addr != "" {
+		if err := s.StartAddr(addr); err != nil {
+			return nil, fmt.Errorf("failed to start miniredis at %s: %w", addr, err)
+		}
+	} else {
+		if err := s.Start(); err != nil {
+			return nil, fmt.Errorf("failed to start miniredis: %w", err)
+		}
 	}
 
 	client := redis.NewClient(&redis.Options{

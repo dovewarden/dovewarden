@@ -59,7 +59,7 @@ func main() {
 
 	if cfg.RedisMode == "inmemory" {
 		slog.Info("Initializing in-memory Redis queue")
-		q, err = queue.NewInMemoryQueue(cfg.Namespace)
+		q, err = queue.NewInMemoryQueue(cfg.Namespace, cfg.RedisAddr)
 		if err != nil {
 			slog.Error("failed to create in-memory queue", "error", err)
 			os.Exit(1)
