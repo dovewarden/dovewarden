@@ -1,0 +1,12 @@
+capabilities: CHILDREN LIST-EXTENDED
+connections: 1
+state: selected
+messages: all
+
+ok select $mailbox
+* 0 RECENT
+
+ok STORE 1 +FLAGS (\Seen)
+
+ok fetch 1:* (envelope, flags)
+* 1 FETCH (FLAGS (\Seen $HasNoAttachment) ENVELOPE ("Thu, 15 Feb 2007 01:02:03 +0200" NIL ((NIL NIL "user" "domain")) ((NIL NIL "user" "domain")) ((NIL NIL "user" "domain")) NIL NIL NIL NIL NIL))

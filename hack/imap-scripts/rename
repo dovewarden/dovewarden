@@ -1,0 +1,8 @@
+capabilities: CHILDREN LIST-EXTENDED
+connections: 1
+state: selected
+messages: all
+
+ok unselect
+
+ok rename $mailbox $mailbox-renamed

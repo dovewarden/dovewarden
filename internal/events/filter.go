@@ -19,7 +19,14 @@ var AcceptedEvents = map[string]bool{
 
 // AcceptedCmdNames is the list of IMAP commands that should be queued.
 var AcceptedCmdNames = map[string]bool{
-	"APPEND": true,
+	"APPEND":      true,
+	"CREATE":      true,
+	"EXPUNGE":     true,
+	"RENAME":      true,
+	"SELECT":      false,
+	"STORE":       true,
+	"SUBSCRIBE":   true,
+	"UNSUBSCRIBE": true,
 }
 
 // Filter validates and filters incoming events.

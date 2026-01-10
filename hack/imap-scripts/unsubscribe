@@ -1,0 +1,6 @@
+capabilities: CHILDREN LIST-EXTENDED
+connections: 1
+state: selected
+messages: all
+
+ok unsubscribe $mailbox

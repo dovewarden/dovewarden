@@ -66,3 +66,17 @@ tasks:
     desc: Run go tests
     cmds:
     - go test -v ./...
+
+  integration:dependencies:
+    desc: Set up dependencies for integration tests
+    cmds:
+    - docker compose up --wait
+
+  integration:imap:cmd:*:
+    desc: Run IMAP integration tests
+    deps:
+    - task: integration:dependencies
+    vars:
+      imap_command: "{{index .MATCH 0}}"
+    cmds:
+    - docker compose exec dovecot-test imaptest user={{.imap_command}} pass=secret host=dovecot-a port=31143 test=/opt/imap-scripts/{{.imap_command}}

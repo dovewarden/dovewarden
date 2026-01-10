@@ -3,73 +3,71 @@ package events
 import (
 	"encoding/json"
 	"os"
-	"strings"
 	"testing"
 )
 
 func TestFilterWithFixtures(t *testing.T) {
-	tests := []struct {
-		name            string
-		fixtureFile     string
-		shouldPass      bool
-		expectedErr     error
-		expectedCmdName string
-	}{
-		{
-			name:            "events.jsonl should pass filter",
-			fixtureFile:     "../../fixtures/events.jsonl",
-			shouldPass:      true,
-			expectedErr:     nil,
-			expectedCmdName: "APPEND",
-		},
-		{
-			name:            "events-ignore.jsonl should fail filter",
-			fixtureFile:     "../../fixtures/events-ignore.jsonl",
-			shouldPass:      false,
-			expectedErr:     ErrInvalidCmdName,
-			expectedCmdName: "",
-		},
+	// Test accepted events from fixtures/events/*.json
+	acceptedDir := "../../fixtures/events"
+	acceptedFiles, err := os.ReadDir(acceptedDir)
+	if err != nil {
+		t.Fatalf("failed to read fixtures/events directory: %v", err)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, file := range acceptedFiles {
+		if file.IsDir() {
+			continue
+		}
+
+		t.Run("accepted: "+file.Name(), func(t *testing.T) {
 			// Read fixture file
-			data, err := os.ReadFile(tt.fixtureFile)
+			data, err := os.ReadFile(acceptedDir + "/" + file.Name())
 			if err != nil {
-				t.Fatalf("failed to read fixture file %s: %v", tt.fixtureFile, err)
+				t.Fatalf("failed to read fixture file %s: %v", file.Name(), err)
 			}
 
-			// Split by newlines and process each event
-			lines := strings.Split(string(data), "\n")
-			for _, line := range lines {
-				if strings.TrimSpace(line) == "" {
-					continue
-				}
+			// Test the filter
+			result, err := Filter(data)
 
-				// Test the filter
-				result, err := Filter([]byte(line))
+			if err != nil {
+				t.Fatalf("Filter() returned unexpected error: %v", err)
+			}
+			if result == nil {
+				t.Fatal("Filter() returned nil for event that should pass")
+			}
+			if result.Username == "" {
+				t.Fatal("expected non-empty username")
+			}
+		})
+	}
 
-				if tt.shouldPass {
-					if err != nil {
-						t.Errorf("Filter() returned unexpected error: %v", err)
-					}
-					if result == nil {
-						t.Error("Filter() returned nil for event that should pass")
-					}
-					if result.CmdName != tt.expectedCmdName {
-						t.Errorf("expected CmdName %s, got %s", tt.expectedCmdName, result.CmdName)
-					}
-					if result.Username == "" {
-						t.Error("expected non-empty username")
-					}
-				} else {
-					if err == nil {
-						t.Errorf("Filter() should have returned error, got nil")
-					}
-					if err != tt.expectedErr {
-						t.Errorf("expected error %v, got %v", tt.expectedErr, err)
-					}
-				}
+	// Test ignored events from fixtures/events/ignore/*.json
+	ignoredDir := "../../fixtures/events/ignore"
+	ignoredFiles, err := os.ReadDir(ignoredDir)
+	if err != nil {
+		t.Fatalf("failed to read fixtures/events/ignore directory: %v", err)
+	}
+
+	for _, file := range ignoredFiles {
+		if file.IsDir() {
+			continue
+		}
+
+		t.Run("ignored: "+file.Name(), func(t *testing.T) {
+			// Read fixture file
+			data, err := os.ReadFile(ignoredDir + "/" + file.Name())
+			if err != nil {
+				t.Fatalf("failed to read fixture file %s: %v", file.Name(), err)
+			}
+
+			// Test the filter
+			result, err := Filter(data)
+
+			if err == nil {
+				t.Errorf("Filter() should have returned error, got nil")
+			}
+			if result != nil {
+				t.Error("Filter() should have returned nil for invalid event")
 			}
 		})
 	}
