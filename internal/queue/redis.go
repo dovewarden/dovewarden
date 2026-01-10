@@ -54,11 +54,13 @@ func NewInMemoryQueue(namespace string, addr string) (*InMemoryQueue, error) {
 // Enqueue adds or updates a user to the priority queue.
 // Uses a sorted set with the current timestamp as the score (lower score = higher priority initially).
 // A user's priority is only updated if the new score is lower than the existing score (must be synced sooner).
-func (q *InMemoryQueue) Enqueue(ctx context.Context, username string, eventData string, priority float64) error {
+// The queue priority is determined by the timestamp the event was enqueued, divided by the priorityFactor (higher
+// factor will result in user being dequeued sooner).
+func (q *InMemoryQueue) Enqueue(ctx context.Context, username string, eventData string, priorityFactor float64) error {
 	key := fmt.Sprintf("%s:%s", q.ns, SYNC_TASKS)
 
 	// Use current timestamp as initial score; priority parameter reserved for future use
-	score := float64(time.Now().UnixNano()) / 1e9
+	score := float64(time.Now().UnixNano()) / priorityFactor
 
 	if err := q.client.ZAddLT(ctx, key, redis.Z{
 		Score:  score,
