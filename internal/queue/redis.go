@@ -3,6 +3,7 @@ package queue
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
@@ -16,6 +17,10 @@ type InMemoryQueue struct {
 	server *miniredis.Miniredis
 	client *redis.Client
 	ns     string
+
+	// operation counters
+	enqueueCount uint64
+	dequeueCount uint64
 }
 
 // NewInMemoryQueue creates a new in-memory Redis queue.
@@ -52,8 +57,6 @@ func NewInMemoryQueue(namespace string, addr string) (*InMemoryQueue, error) {
 }
 
 // Enqueue adds or updates a user to the priority queue.
-// Uses a sorted set with the current timestamp as the score (lower score = higher priority initially).
-// Enqueue adds or updates a user to the priority queue.
 // Uses a sorted set with the timestamp divided by the priority factor as the score.
 // Lower score = higher priority.
 // factor=1.0 = normal priority (scores are timestamps)
@@ -66,8 +69,6 @@ func (q *InMemoryQueue) Enqueue(ctx context.Context, username string, priorityFa
 	timestamp := float64(time.Now().UnixNano()) / 1e9
 
 	// Apply priority factor: divide by factor to adjust priority
-	// factor > 1.0 produces lower score (higher priority)
-	// factor < 1.0 produces higher score (lower priority)
 	if priorityFactor <= 0 {
 		priorityFactor = 1.0 // Safety: avoid division by zero
 	}
@@ -79,7 +80,7 @@ func (q *InMemoryQueue) Enqueue(ctx context.Context, username string, priorityFa
 	}).Err(); err != nil {
 		return fmt.Errorf("failed to enqueue event: %w", err)
 	}
-
+	atomic.AddUint64(&q.enqueueCount, 1)
 	return nil
 }
 
@@ -87,19 +88,22 @@ func (q *InMemoryQueue) Enqueue(ctx context.Context, username string, priorityFa
 // Returns empty string if queue is empty.
 func (q *InMemoryQueue) Dequeue(ctx context.Context) (string, error) {
 	key := fmt.Sprintf("%s:%s", q.ns, SYNC_TASKS)
-
-	// ZPOPMIN returns the member with the lowest score
+	// Using BZPopMin would be preferable to avoid busy-waiting, but miniredis does not support it
+	// https://github.com/alicebob/miniredis/issues/428
 	result, err := q.client.ZPopMin(ctx, key).Result()
 	if err != nil {
 		return "", fmt.Errorf("failed to dequeue: %w", err)
 	}
-
 	if len(result) == 0 {
-		// Queue is empty
 		return "", nil
 	}
-
+	atomic.AddUint64(&q.dequeueCount, 1)
 	return result[0].Member.(string), nil
+}
+
+// Stats returns the total number of enqueue and dequeue operations.
+func (q *InMemoryQueue) Stats() (enqueues uint64, dequeues uint64) {
+	return atomic.LoadUint64(&q.enqueueCount), atomic.LoadUint64(&q.dequeueCount)
 }
 
 // HealthCheck checks connectivity to the in-memory Redis client.
