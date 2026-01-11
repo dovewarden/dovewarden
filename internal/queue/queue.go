@@ -10,6 +10,10 @@ type Queue interface {
 	// Enqueue adds an event to the queue for a given username with a priority score.
 	Enqueue(ctx context.Context, username string, priorityFactor float64) error
 
+	// Dequeue removes and returns the username with the lowest priority score (highest priority).
+	// Returns empty string and error if queue is empty or backend error occurs.
+	Dequeue(ctx context.Context) (string, error)
+
 	// HealthCheck verifies the backend is reachable and functioning.
 	HealthCheck(ctx context.Context) error
 

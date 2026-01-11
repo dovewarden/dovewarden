@@ -37,7 +37,7 @@ func TestPriorityOrderByInsertion(t *testing.T) {
 		t.Fatalf("enqueue user-first: %v", err)
 	}
 	// ensure different timestamp
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(1100 * time.Millisecond)
 	if err := q.Enqueue(ctx, "user-second", 1.0); err != nil {
 		t.Fatalf("enqueue user-second: %v", err)
 	}
@@ -68,7 +68,7 @@ func TestPriorityFactorGreaterThanOne(t *testing.T) {
 		t.Fatalf("enqueue user-one: %v", err)
 	}
 	// small sleep to avoid identical timestamps
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 	// factor > 1 reduces score -> higher priority, should be ahead of factor=1
 	if err := q.Enqueue(ctx, "user-high", 2.0); err != nil {
 		t.Fatalf("enqueue user-high: %v", err)
@@ -100,7 +100,7 @@ func TestPriorityFactorLessThanOne(t *testing.T) {
 		t.Fatalf("enqueue user-one: %v", err)
 	}
 	// small sleep
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 	// factor < 1 increases score -> lower priority, should be after factor=1
 	if err := q.Enqueue(ctx, "user-low", 0.5); err != nil {
 		t.Fatalf("enqueue user-low: %v", err)

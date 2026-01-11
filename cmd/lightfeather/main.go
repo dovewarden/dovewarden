@@ -75,6 +75,11 @@ func main() {
 		}
 	}()
 
+	// Initialize worker pool for dequeuing
+	slog.Info("Initializing worker pool", "num_workers", cfg.NumWorkers)
+	workerPool := queue.NewWorkerPool(q, cfg.NumWorkers, logger)
+	workerPool.Start(context.Background())
+
 	// Create HTTP server for events
 	eventSrv := server.New(cfg.HTTPAddr, q, m)
 	eventsHTTP := &http.Server{Addr: cfg.HTTPAddr, Handler: eventSrv.Handler()}
@@ -141,6 +146,12 @@ func main() {
 	atomic.StoreUint32(&readyFlag, 0)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	// Stop worker pool first (gracefully)
+	if err := workerPool.Stop(ctx); err != nil {
+		slog.Error("error stopping worker pool", "error", err)
+	}
+
 	if err := eventsHTTP.Shutdown(ctx); err != nil {
 		slog.Error("error shutting down events server", "error", err)
 	}
