@@ -8,23 +8,31 @@ import (
 
 // Config holds application configuration.
 type Config struct {
-	HTTPAddr    string
-	MetricsAddr string
-	RedisMode   string // "inmemory" or "external"
-	RedisAddr   string
-	Namespace   string
-	NumWorkers  int
+	HTTPAddr        string
+	MetricsAddr     string
+	RedisMode       string // "inmemory" or "external"
+	RedisAddr       string
+	Namespace       string
+	NumWorkers      int
+	DoveadmURL      string
+	DoveadmUser     string
+	DoveadmPassword string
+	DoveadmDest     string // destination for dsync (e.g., "imap")
 }
 
 // Load reads configuration from environment and command-line flags.
 func Load() *Config {
 	cfg := &Config{
-		HTTPAddr:    ":8080",
-		MetricsAddr: ":9090",
-		RedisMode:   "inmemory",
-		RedisAddr:   "localhost:6379",
-		Namespace:   "lf",
-		NumWorkers:  4,
+		HTTPAddr:        ":8080",
+		MetricsAddr:     ":9090",
+		RedisMode:       "inmemory",
+		RedisAddr:       "localhost:6379",
+		Namespace:       "lf",
+		NumWorkers:      4,
+		DoveadmURL:      "http://localhost:8080",
+		DoveadmUser:     "",
+		DoveadmPassword: "",
+		DoveadmDest:     "imap",
 	}
 
 	flag.StringVar(&cfg.HTTPAddr, "http-addr", envOrDefault("LF_HTTP_ADDR", cfg.HTTPAddr), "HTTP server listen address for events")
@@ -32,6 +40,10 @@ func Load() *Config {
 	flag.StringVar(&cfg.RedisMode, "redis-mode", envOrDefault("LF_REDIS_MODE", cfg.RedisMode), "Redis mode: inmemory or external")
 	flag.StringVar(&cfg.RedisAddr, "redis-addr", envOrDefault("LF_REDIS_ADDR", cfg.RedisAddr), "Redis address for external mode")
 	flag.StringVar(&cfg.Namespace, "namespace", envOrDefault("LF_NAMESPACE", cfg.Namespace), "Key namespace prefix")
+	flag.StringVar(&cfg.DoveadmURL, "doveadm-url", envOrDefault("LF_DOVEADM_URL", cfg.DoveadmURL), "Doveadm API base URL")
+	flag.StringVar(&cfg.DoveadmUser, "doveadm-user", envOrDefault("LF_DOVEADM_USER", cfg.DoveadmUser), "Doveadm API username")
+	flag.StringVar(&cfg.DoveadmPassword, "doveadm-password", envOrDefault("LF_DOVEADM_PASSWORD", cfg.DoveadmPassword), "Doveadm API password")
+	flag.StringVar(&cfg.DoveadmDest, "doveadm-dest", envOrDefault("LF_DOVEADM_DEST", cfg.DoveadmDest), "Doveadm dsync destination")
 
 	// Parse NumWorkers from environment or flag
 	numWorkersStr := envOrDefault("LF_NUM_WORKERS", "4")

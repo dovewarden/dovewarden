@@ -48,6 +48,8 @@ func main() {
 		"metrics_addr", cfg.MetricsAddr,
 		"redis_mode", cfg.RedisMode,
 		"namespace", cfg.Namespace,
+		"num_workers", cfg.NumWorkers,
+		"doveadm_url", cfg.DoveadmURL,
 	)
 
 	// Initialize metrics with default prometheus registry
@@ -78,6 +80,14 @@ func main() {
 	// Initialize worker pool for dequeuing
 	slog.Info("Initializing worker pool", "num_workers", cfg.NumWorkers)
 	workerPool := queue.NewWorkerPool(q, cfg.NumWorkers, logger)
+
+	// Set up Doveadm event handler if credentials are provided
+	if cfg.DoveadmUser != "" && cfg.DoveadmPassword != "" {
+		slog.Info("Setting up Doveadm sync handler")
+		handler := queue.NewDoveadmEventHandler(cfg.DoveadmURL, cfg.DoveadmUser, cfg.DoveadmPassword, cfg.DoveadmDest, logger)
+		workerPool.SetHandler(handler)
+	}
+
 	workerPool.Start(context.Background())
 
 	// Create HTTP server for events

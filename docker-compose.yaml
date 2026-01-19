@@ -34,6 +34,14 @@ services:
         protocol: tcp
         published: 30024
         target: 30024
+      - name: doveadm
+        protocol: tcp
+        published: 30345
+        target: 12345
+      - name: doveadm-http
+        protocol: tcp
+        published: 30080
+        target: 8080
     volumes:
       - ./hack/dovecot-a.conf:/etc/dovecot/conf.d/dovecot-a.conf:ro
       - ./hack/dovecot-shared.conf:/etc/dovecot/conf.d/dovecot-shared.conf:ro
@@ -48,6 +56,14 @@ services:
         protocol: tcp
         published: 9143
         target: 31143
+      - name: doveadm
+        protocol: tcp
+        published: 31345
+        target: 12345
+      - name: doveadm-http
+        protocol: tcp
+        published: 31080
+        target: 8080
     volumes:
       - ./hack/dovecot-b.conf:/etc/dovecot/conf.d/dovecot-b.conf:ro
       - ./hack/dovecot-shared.conf:/etc/dovecot/conf.d/dovecot-shared.conf:ro
