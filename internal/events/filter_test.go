@@ -73,6 +73,94 @@ func TestFilterWithFixtures(t *testing.T) {
 	}
 }
 
+// Additional edge-case coverage focusing on malformed inputs and corner cases
+func TestFilterEdgeCases(t *testing.T) {
+	t.Run("empty input", func(t *testing.T) {
+		data := []byte("")
+		res, err := Filter(data)
+		if err == nil || res != nil {
+			t.Fatalf("expected JSON unmarshal error for empty input, got res=%v err=%v", res, err)
+		}
+	})
+
+	t.Run("whitespace input", func(t *testing.T) {
+		data := []byte("   \n\t  ")
+		res, err := Filter(data)
+		if err == nil || res != nil {
+			t.Fatalf("expected JSON unmarshal error for whitespace input, got res=%v err=%v", res, err)
+		}
+	})
+
+	t.Run("garbage input", func(t *testing.T) {
+		data := []byte("not json")
+		res, err := Filter(data)
+		if err == nil || res != nil {
+			t.Fatalf("expected JSON unmarshal error for garbage input, got res=%v err=%v", res, err)
+		}
+	})
+
+	t.Run("empty object -> empty event error", func(t *testing.T) {
+		data := []byte("{}")
+		res, err := Filter(data)
+		if err != ErrEmptyEvent {
+			t.Fatalf("expected ErrEmptyEvent, got res=%v err=%v", res, err)
+		}
+		if res != nil {
+			t.Fatalf("expected nil result, got %v", res)
+		}
+	})
+
+	t.Run("missing fields -> empty username error", func(t *testing.T) {
+		payload := map[string]any{
+			"event": "imap_command_finished",
+		}
+		data, _ := json.Marshal(payload)
+		res, err := Filter(data)
+		if err != ErrEmptyUsername {
+			t.Fatalf("expected ErrEmptyUsername, got res=%v err=%v", res, err)
+		}
+	})
+
+	t.Run("lowercase accepted cmd_name should pass", func(t *testing.T) {
+		ev := Event{
+			Event:  "imap_command_finished",
+			Fields: Fields{User: "alice", CmdName: "append"},
+		}
+		data, _ := json.Marshal(ev)
+		res, err := Filter(data)
+		if err != nil || res == nil {
+			t.Fatalf("expected success, got res=%v err=%v", res, err)
+		}
+		if res.CmdName != "append" { // Filter preserves original case in result
+			t.Fatalf("expected CmdName to be original 'append', got %q", res.CmdName)
+		}
+	})
+
+	t.Run("cmd_name with trailing space should be rejected", func(t *testing.T) {
+		ev := Event{
+			Event:  "imap_command_finished",
+			Fields: Fields{User: "bob", CmdName: "APPEND "},
+		}
+		data, _ := json.Marshal(ev)
+		res, err := Filter(data)
+		if err != ErrInvalidCmdName || res != nil {
+			t.Fatalf("expected ErrInvalidCmdName, got res=%v err=%v", res, err)
+		}
+	})
+
+	t.Run("another accepted command (RENAME)", func(t *testing.T) {
+		ev := Event{
+			Event:  "imap_command_finished",
+			Fields: Fields{User: "carol", CmdName: "RENAME"},
+		}
+		data, _ := json.Marshal(ev)
+		res, err := Filter(data)
+		if err != nil || res == nil {
+			t.Fatalf("expected success for RENAME, got res=%v err=%v", res, err)
+		}
+	})
+}
+
 func TestFilterValidation(t *testing.T) {
 	tests := []struct {
 		name        string

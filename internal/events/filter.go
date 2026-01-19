@@ -3,6 +3,7 @@ package events
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 )
 
 var (
@@ -49,7 +50,7 @@ func Filter(data []byte) (*FilteredEvent, error) {
 		return nil, ErrEmptyUsername
 	}
 
-	if !AcceptedCmdNames[evt.Fields.CmdName] {
+	if !AcceptedCmdNames[strings.ToUpper(evt.Fields.CmdName)] {
 		return nil, ErrInvalidCmdName
 	}
 
