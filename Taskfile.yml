@@ -26,6 +26,7 @@ tasks:
     desc: Run tests
     cmds:
       - task: go:test
+      - task: integration
 
   git:
     vars:
@@ -67,6 +68,17 @@ tasks:
     cmds:
     - go test -v ./...
 
+  integration:
+    desc: Run all integration tests
+    vars:
+      imap_commands:
+        sh: find hack/imap-scripts/ -type f ! -name '*.*' | xargs -n1 basename
+    cmds:
+    - for:
+        var: imap_commands
+        split: "\n"
+      task: integration:imap:cmd:{{.ITEM}}
+
   integration:dependencies:
     desc: Set up dependencies for integration tests
     cmds:
@@ -79,4 +91,14 @@ tasks:
     vars:
       imap_command: "{{index .MATCH 0}}"
     cmds:
+    # purge all mailboxes of the user from both dovecots
+    - docker compose exec dovecot-a rm -rf /srv/vmail/{{.imap_command}}
+    - docker compose exec dovecot-b rm -rf /srv/vmail/{{.imap_command}}
+    # TODO check metrics and wait until queue is empty instead of sleeping -- we don't want to have the delete command replicated while already running imaptest
+    - sleep 2
+    # run imaptest against dovecot-a, which will create mailbox and possibly some mails
     - docker compose exec dovecot-test imaptest user={{.imap_command}} pass=secret host=dovecot-a port=31143 test=/opt/imap-scripts/{{.imap_command}}
+    # TODO check metrics and wait until queue is empty instead of sleeping
+    - sleep 2
+    # check if user was created to see if sync was executed (doveadm mailbox list would already create the user)
+    - docker compose exec dovecot-b test -d /srv/vmail/{{.imap_command}} || (echo "User {{.imap_command}} was not created on dovecot-b, sync did not happen" && exit 1)
