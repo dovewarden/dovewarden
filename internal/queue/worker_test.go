@@ -34,7 +34,9 @@ func TestWorkerPoolDequeue(t *testing.T) {
 
 	// Create worker pool and start
 	wp := NewWorkerPool(q, 2, logger)
-	wp.Start(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	wp.Start(ctx)
 
 	// Wait a bit for workers to process
 	time.Sleep(1 * time.Second)
@@ -92,7 +94,9 @@ func TestWorkerPoolRequeueOnError(t *testing.T) {
 	}
 	wp.SetHandler(handler)
 
-	wp.Start(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	wp.Start(ctx)
 	time.Sleep(2 * time.Second)
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -131,7 +135,9 @@ func TestGracefulShutdown(t *testing.T) {
 		delay: 100 * time.Millisecond,
 	}
 	wp.SetHandler(handler)
-	wp.Start(context.Background())
+	wpCtx, wpCancel := context.WithCancel(context.Background())
+	defer wpCancel()
+	wp.Start(wpCtx)
 
 	time.Sleep(500 * time.Millisecond)
 
