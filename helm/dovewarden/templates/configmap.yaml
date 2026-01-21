@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "dovewarden.fullname" . }}-config
+  labels:
+    {{- include "dovewarden.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    httpAddr: {{ .Values.config.httpAddr | quote }}
+    metricsAddr: {{ .Values.config.metricsAddr | quote }}
+    redis:
+      mode: {{ .Values.config.redis.mode | quote }}
+      addr: {{ .Values.config.redis.addr | quote }}
+    namespace: {{ .Values.config.namespace | quote }}
+    numWorkers: {{ .Values.config.numWorkers }}
+    doveadm:
+      url: {{ .Values.config.doveadm.url | quote }}
+      destination: {{ .Values.config.doveadm.destination | quote }}

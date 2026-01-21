@@ -1,0 +1,22 @@
+{{- if .Values.metricsService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "dovewarden.fullname" . }}-metrics
+  labels:
+    {{- include "dovewarden.labels" . | nindent 4 }}
+    app.kubernetes.io/component: metrics
+  {{- with .Values.metricsService.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.metricsService.type }}
+  ports:
+    - port: {{ .Values.metricsService.port }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "dovewarden.selectorLabels" . | nindent 4 }}
+{{- end }}

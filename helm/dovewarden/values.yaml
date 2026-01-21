@@ -1,0 +1,133 @@
+replicaCount: 1
+
+image:
+  repository: jenserat/dovewarden
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65534
+  runAsGroup: 65534
+  fsGroup: 65534
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65534
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+  annotations: {}
+  name: dovewarden
+
+# Metrics service for Prometheus
+metricsService:
+  enabled: true
+  type: ClusterIP
+  port: 9090
+  targetPort: 9090
+  annotations: {}
+
+# ServiceMonitor for Prometheus Operator
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  scrapeTimeout: 10s
+  labels: {}
+  honorLabels: false
+  relabelings: []
+  metricRelabelings: []
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 9090
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 1
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 9090
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 1
+  failureThreshold: 3
+
+startupProbe:
+  httpGet:
+    path: /healthz
+    port: 9090
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 1
+  failureThreshold: 30
+
+# Application configuration
+config:
+  httpAddr: ":8080"
+  metricsAddr: ":9090"
+
+  # Redis configuration
+  redis:
+    mode: "inmemory"  # inmemory or external
+    addr: "localhost:6379"
+
+  # Prefix in redis
+  namespace: "dovewarden"
+  # Each worker will run one sync job in parallel
+  numWorkers: 4
+
+  # Doveadm configuration
+  doveadm:
+    url: "http://doveadm:8080"
+    user: ""
+    password: ""
+    # Sync target of secondary dovecot server, eg. tcp:dovecot-b:12345
+    destination: ""
+
+# Volume mounts for temporary files
+volumeMounts: {}
+
+volumes: {}
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

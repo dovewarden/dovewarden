@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dovewarden.fullname" . }}
+  labels:
+    {{- include "dovewarden.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  {{- if and (eq .Values.config.redis.mode "inmemory") (gt (.Values.replicaCount | int) 1) }}
+  {{ fail "miniredis mode only allows single replica" }}
+  {{- end }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "dovewarden.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "dovewarden.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "dovewarden.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            - name: DOVEWARDEN_HTTP_ADDR
+              value: "{{ .Values.config.httpAddr }}"
+            - name: DOVEWARDEN_METRICS_ADDR
+              value: "{{ .Values.config.metricsAddr }}"
+            - name: DOVEWARDEN_REDIS_MODE
+              value: "{{ .Values.config.redis.mode }}"
+            {{- if eq .Values.config.redis.mode "external" }}
+            - name: DOVEWARDEN_REDIS_ADDR
+              value: "{{ .Values.config.redis.addr }}"
+            {{- end }}
+            - name: DOVEWARDEN_NAMESPACE
+              value: "{{ .Values.config.namespace }}"
+            - name: DOVEWARDEN_NUM_WORKERS
+              value: "{{ .Values.config.numWorkers | toString }}"
+            - name: DOVEWARDEN_DOVEADM_URL
+              value: "{{ .Values.config.doveadm.url }}"
+            {{- if .Values.config.doveadm.user }}
+            - name: DOVEWARDEN_DOVEADM_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dovewarden.fullname" . }}-doveadm
+                  key: username
+                  optional: true
+            {{- end }}
+            {{- if .Values.config.doveadm.password }}
+            - name: DOVEWARDEN_DOVEADM_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dovewarden.fullname" . }}-doveadm
+                  key: password
+                  optional: true
+            {{- end }}
+            - name: DOVEWARDEN_DOVEADM_DEST
+              value: "{{ .Values.config.doveadm.destination }}"
+          {{- with .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
