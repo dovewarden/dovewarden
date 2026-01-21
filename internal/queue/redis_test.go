@@ -186,6 +186,9 @@ func TestDequeueGracefulErrorOnMalformedData(t *testing.T) {
 		Member: "123", // Non-standard member (numeric string)
 	}).Err()
 	// Note: Redis/miniredis will convert to string anyway, but let's test the graceful handling
+	if err != nil {
+		t.Fatalf("failed to insert malformed data: %v", err)
+	}
 
 	// Now try to dequeue - should handle gracefully
 	username, err := q.Dequeue(ctx)
@@ -287,7 +290,7 @@ func TestDequeueStatsIncrement(t *testing.T) {
 		t.Fatalf("dequeue: %v", err)
 	}
 
-	enqs, deqs = q.Stats()
+	_, deqs = q.Stats()
 	if deqs != 1 {
 		t.Fatalf("expected 1 dequeue after first pop, got %d", deqs)
 	}
@@ -299,7 +302,7 @@ func TestDequeueStatsIncrement(t *testing.T) {
 		}
 	}
 
-	enqs, deqs = q.Stats()
+	_, deqs = q.Stats()
 	if deqs != 3 {
 		t.Fatalf("expected 3 dequeues total, got %d", deqs)
 	}

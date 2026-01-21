@@ -38,21 +38,13 @@ func FuzzQueueDequeue(f *testing.F) {
 	f.Add([]byte("seed-2"))
 	f.Add([]byte("another-seed"))
 
-	// open /tmp/fuzz-queue-log.txt for appending
-	logFile, err := os.OpenFile("/tmp/fuzz-queue-log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		f.Fatalf("failed to open log file: %v", err)
-	}
-	defer logFile.Close()
-
 	f.Fuzz(func(t *testing.T, seedBytes []byte) {
-		logFile.WriteString(fmt.Sprintf("Fuzz iteration with seed: %x\n", seedBytes))
 		// Derive deterministic seed from input bytes
 		h := sha1.Sum(seedBytes)
 		seed := int64(binary.BigEndian.Uint64(h[:8]))
 		rnd := rand.New(rand.NewSource(seed))
 
-		logger := slog.New(slog.NewTextHandler(logFile, &slog.HandlerOptions{Level: slog.LevelDebug}))
+		logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 		q, err := NewInMemoryQueue("fuzzns", "")
 		if err != nil {
 			t.Fatalf("failed to create queue: %v", err)
@@ -65,7 +57,7 @@ func FuzzQueueDequeue(f *testing.F) {
 
 		ctx := context.Background()
 
-		var usersAdded map[string]struct{} = make(map[string]struct{})
+		var usersAdded = make(map[string]struct{})
 		var usersProcessed sync.Map
 		numWorkers := 10
 		wp := NewWorkerPool(q, numWorkers, logger)
