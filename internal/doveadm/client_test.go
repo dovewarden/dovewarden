@@ -48,7 +48,7 @@ func TestSyncSuccess(t *testing.T) {
 		// Send success response
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = fmt.Fprintf(w, `[["sync",{"status":"ok"},"lightfeather-sync"]]`)
+		_, _ = fmt.Fprintf(w, `[["sync",{"status":"ok"},"dovewarden-sync"]]`)
 	}))
 	defer server.Close()
 
@@ -142,12 +142,12 @@ func TestSyncPayloadFormat(t *testing.T) {
 
 		// Verify tag
 		tag, ok := cmdArray[2].(string)
-		if !ok || tag != "lightfeather-sync" {
-			t.Errorf("expected tag 'lightfeather-sync', got %v", cmdArray[2])
+		if !ok || tag != "dovewarden-sync" {
+			t.Errorf("expected tag 'dovewarden-sync', got %v", cmdArray[2])
 		}
 
 		w.WriteHeader(http.StatusOK)
-		_, _ = fmt.Fprintf(w, `[["sync",{"status":"ok"},"lightfeather-sync"]]`)
+		_, _ = fmt.Fprintf(w, `[["sync",{"status":"ok"},"dovewarden-sync"]]`)
 	}))
 	defer server.Close()
 

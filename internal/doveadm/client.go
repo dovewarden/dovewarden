@@ -35,7 +35,7 @@ type SyncRequest struct {
 }
 
 // ResponseError represents an error entry returned by Doveadm
-// [ [ "error", {"type":"exitCode","exitCode":75}, "lightfeather-sync" ] ]
+// [ [ "error", {"type":"exitCode","exitCode":75}, "dovewarden-sync" ] ]
 type ResponseError struct {
 	Type     string `json:"type"`
 	ExitCode int    `json:"exitCode"`
@@ -84,7 +84,7 @@ func (c *Client) Sync(ctx context.Context, username string, destination string) 
 				"destination": []string{destination},
 				"user":        username,
 			},
-			"lightfeather-sync",
+			"dovewarden-sync",
 		},
 	}
 

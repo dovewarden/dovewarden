@@ -14,23 +14,23 @@ Control the log output format using the `LOG_FORMAT` environment variable:
 
 ```bash
 # Text output (default, human-readable)
-./lightfeather
+./dovewarden
 # or explicitly:
-LOG_FORMAT=text ./lightfeather
+LOG_FORMAT=text ./dovewarden
 
 # JSON output (machine-readable, suitable for log aggregation)
-LOG_FORMAT=json ./lightfeather
+LOG_FORMAT=json ./dovewarden
 ```
 
 ### Log Level
 
-The default log level is `Info`. To change it, modify the `opts.Level` in `cmd/lightfeather/main.go`.
+The default log level is `Info`. To change it, modify the `opts.Level` in `cmd/dovewarden/main.go`.
 
 ## Examples
 
 ### Text Output
 ```
-time=2024-12-26T20:40:02.123Z level=INFO source=main.go:48 msg="Starting lightfeather" http_addr=:8080 metrics_addr=:8081 redis_mode=inmemory namespace=lightfeather
+time=2024-12-26T20:40:02.123Z level=INFO source=main.go:48 msg="Starting dovewarden" http_addr=:8080 metrics_addr=:8081 redis_mode=inmemory namespace=dovewarden
 time=2024-12-26T20:40:02.124Z level=INFO source=main.go:61 msg="Initializing in-memory Redis queue"
 time=2024-12-26T20:40:02.125Z level=INFO source=http.go:58 msg="event accepted" username=user-a cmd=APPEND event_type=imap_command_finished
 time=2024-12-26T20:40:02.126Z level=WARN source=http.go:51 msg="event ignored" reason="cmd_name not accepted by filter"
@@ -38,7 +38,7 @@ time=2024-12-26T20:40:02.126Z level=WARN source=http.go:51 msg="event ignored" r
 
 ### JSON Output
 ```json
-{"time":"2024-12-26T20:40:02.123Z","level":"INFO","source":"main.go:48","msg":"Starting lightfeather","http_addr":":8080","metrics_addr":":8081","redis_mode":"inmemory","namespace":"lightfeather"}
+{"time":"2024-12-26T20:40:02.123Z","level":"INFO","source":"main.go:48","msg":"Starting dovewarden","http_addr":":8080","metrics_addr":":8081","redis_mode":"inmemory","namespace":"dovewarden"}
 {"time":"2024-12-26T20:40:02.124Z","level":"INFO","source":"main.go:61","msg":"Initializing in-memory Redis queue"}
 {"time":"2024-12-26T20:40:02.125Z","level":"INFO","source":"http.go:58","msg":"event accepted","username":"user-a","cmd":"APPEND","event_type":"imap_command_finished"}
 {"time":"2024-12-26T20:40:02.126Z","level":"WARN","source":"http.go:51","msg":"event ignored","reason":"cmd_name not accepted by filter"}

@@ -12,10 +12,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/JensErat/lightfeather/internal/config"
-	"github.com/JensErat/lightfeather/internal/metrics"
-	"github.com/JensErat/lightfeather/internal/queue"
-	"github.com/JensErat/lightfeather/internal/server"
+	"github.com/dovewarden/dovewarden/internal/config"
+	"github.com/dovewarden/dovewarden/internal/metrics"
+	"github.com/dovewarden/dovewarden/internal/queue"
+	"github.com/dovewarden/dovewarden/internal/server"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -43,7 +43,7 @@ func main() {
 
 	// Load configuration
 	cfg := config.Load()
-	slog.Info("Starting lightfeather",
+	slog.Info("Starting dovewarden",
 		"http_addr", cfg.HTTPAddr,
 		"metrics_addr", cfg.MetricsAddr,
 		"redis_mode", cfg.RedisMode,

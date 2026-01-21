@@ -1,4 +1,4 @@
-module github.com/JensErat/lightfeather
+module github.com/dovewarden/dovewarden
 
 go 1.25.5
 

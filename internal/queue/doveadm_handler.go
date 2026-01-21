@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/JensErat/lightfeather/internal/doveadm"
+	"github.com/dovewarden/dovewarden/internal/doveadm"
 )
 
 // DoveadmEventHandler handles events by sending dsync requests to Doveadm

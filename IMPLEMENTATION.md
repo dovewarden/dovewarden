@@ -1,6 +1,6 @@
-# Lightfeather Implementation Summary
+# dovewarden Implementation Summary
 
-This document provides an overview of the Lightfeather boilerplate application for processing Dovecot events.
+This document provides an overview of the dovewarden boilerplate application for processing Dovecot events.
 
 ## ✅ Completed Components
 
@@ -33,22 +33,22 @@ This document provides an overview of the Lightfeather boilerplate application f
 
 ### 4. **Prometheus Instrumentation** (`internal/metrics/metrics.go`)
 - **Counters**:
-  - `lightfeather_events_received_total`: All received events
-  - `lightfeather_events_filtered_total`: Events passing filter
-  - `lightfeather_events_enqueued_total`: Successfully enqueued events
-  - `lightfeather_enqueue_errors_total`: Enqueue failures
-  - `lightfeather_redis_errors_total`: Redis operation errors
+  - `dovewarden_events_received_total`: All received events
+  - `dovewarden_events_filtered_total`: Events passing filter
+  - `dovewarden_events_enqueued_total`: Successfully enqueued events
+  - `dovewarden_enqueue_errors_total`: Enqueue failures
+  - `dovewarden_redis_errors_total`: Redis operation errors
 - **Gauges**:
-  - `lightfeather_queue_size{username="..."}`: Queue size per user
+  - `dovewarden_queue_size{username="..."}`: Queue size per user
 
 ### 5. **Configuration** (`internal/config/config.go`)
 - Environment variables with CLI flag overrides:
-  - `LF_HTTP_ADDR`: HTTP listen address (default: `:8080`)
-  - `LF_REDIS_MODE`: Backend mode (default: `inmemory`)
-  - `LF_REDIS_ADDR`: External Redis address (for future use)
-  - `LF_NAMESPACE`: Queue key prefix (default: `lf`)
+  - `DOVEWARDEN_HTTP_ADDR`: HTTP listen address (default: `:8080`)
+  - `DOVEWARDEN_REDIS_MODE`: Backend mode (default: `inmemory`)
+  - `DOVEWARDEN_REDIS_ADDR`: External Redis address (for future use)
+  - `DOVEWARDEN_NAMESPACE`: Queue key prefix (default: `dovewarden`)
 
-### 6. **Application Main** (`cmd/lightfeather/main.go`)
+### 6. **Application Main** (`cmd/dovewarden/main.go`)
 - Config initialization
 - Queue setup (currently inmemory only)
 - HTTP server startup
@@ -67,7 +67,7 @@ github.com/prometheus/client_golang v1.20.5 # Prometheus instrumentation
 ### Manual Testing
 ```bash
 # Start server
-./lightfeather
+./dovewarden
 
 # In another terminal:
 
@@ -82,7 +82,7 @@ curl -X POST http://localhost:8080/events \
   -d '{"event":"imap_command_started","username":"user@example.com"}'
 
 # Test 3: View metrics
-curl http://localhost:8080/metrics | grep lightfeather
+curl http://localhost:8080/metrics | grep dovewarden
 ```
 
 ### Expected HTTP Status Codes
@@ -145,26 +145,26 @@ The codebase follows Go best practices:
 
 ```bash
 # Build binary
-go build -o lightfeather ./cmd/lightfeather
+go build -o dovewarden ./cmd/dovewarden
 
 # Run with defaults (inmemory, :8080)
-./lightfeather
+./dovewarden
 
 # Run with custom address
-./lightfeather --http-addr :9090
+./dovewarden --http-addr :9090
 
 # Run with environment variables
-LF_HTTP_ADDR=:3000 ./lightfeather
+DOVEWARDEN_HTTP_ADDR=:3000 ./dovewarden
 ```
 
 ## 📊 Monitoring Example
 
 ```bash
 # Check received events
-curl -s http://localhost:8080/metrics | grep lightfeather_events_received_total
+curl -s http://localhost:8080/metrics | grep dovewarden_events_received_total
 
 # Check queue sizes
-curl -s http://localhost:8080/metrics | grep lightfeather_queue_size
+curl -s http://localhost:8080/metrics | grep dovewarden_queue_size
 
 # Check error rates
 curl -s http://localhost:8080/metrics | grep _errors_total

@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/JensErat/lightfeather/internal/events"
-	"github.com/JensErat/lightfeather/internal/metrics"
-	"github.com/JensErat/lightfeather/internal/queue"
+	"github.com/dovewarden/dovewarden/internal/events"
+	"github.com/dovewarden/dovewarden/internal/metrics"
+	"github.com/dovewarden/dovewarden/internal/queue"
 )
 
 // Server handles HTTP requests for the Dovecot event API.

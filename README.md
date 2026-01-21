@@ -1,4 +1,4 @@
-# Lightfeather
+# dovewarden
 
 A lightweight event processor for Dovecot's event API. Receives IMAP command events, filters them, and enqueues them in a priority queue for asynchronous processing.
 
@@ -41,11 +41,11 @@ Dovecot Event API
 
 Environment variables (with CLI flag overrides):
 
-- `LF_HTTP_ADDR` (`--http-addr`): HTTP server listen address for events (default: `:8080`)
-- `LF_METRICS_ADDR` (`--metrics-addr`): HTTP server listen address for Prometheus metrics (default: `:9090`)
-- `LF_REDIS_MODE` (`--redis-mode`): Redis mode: `inmemory` or `external` (default: `inmemory`)
-- `LF_REDIS_ADDR` (`--redis-addr`): Redis server address for external mode (default: `localhost:6379`)
-- `LF_NAMESPACE` (`--namespace`): Key namespace prefix for queue keys (default: `lf`)
+- `DOVEWARDEN_HTTP_ADDR` (`--http-addr`): HTTP server listen address for events (default: `:8080`)
+- `DOVEWARDEN_METRICS_ADDR` (`--metrics-addr`): HTTP server listen address for Prometheus metrics (default: `:9090`)
+- `DOVEWARDEN_REDIS_MODE` (`--redis-mode`): Redis mode: `inmemory` or `external` (default: `inmemory`)
+- `DOVEWARDEN_REDIS_ADDR` (`--redis-addr`): Redis server address for external mode (default: `localhost:6379`)
+- `DOVEWARDEN_NAMESPACE` (`--namespace`): Key namespace prefix for queue keys (default: `dovewarden`)
 
 ## API Endpoints
 
@@ -81,20 +81,20 @@ Only events with `event: "imap_command_finished"` are accepted. The `username` f
 
 ## Prometheus Metrics
 
-- `lightfeather_events_received_total`: Counter of all received events
-- `lightfeather_events_filtered_total`: Counter of events passing the filter
-- `lightfeather_events_enqueued_total`: Counter of events successfully enqueued
-- `lightfeather_enqueue_errors_total`: Counter of enqueue failures
-- `lightfeather_queue_size{username="..."}`: Current queue size per username
-- `lightfeather_redis_errors_total`: Counter of Redis operation errors
+- `dovewarden_events_received_total`: Counter of all received events
+- `dovewarden_events_filtered_total`: Counter of events passing the filter
+- `dovewarden_events_enqueued_total`: Counter of events successfully enqueued
+- `dovewarden_enqueue_errors_total`: Counter of enqueue failures
+- `dovewarden_queue_size{username="..."}`: Current queue size per username
+- `dovewarden_redis_errors_total`: Counter of Redis operation errors
 
 ## Development & Local Testing
 
 ### Run Locally (In-Memory Mode)
 
 ```bash
-go build -o lightfeather ./cmd/lightfeather
-./lightfeather --http-addr :8080 --metrics-addr :9090
+go build -o dovewarden ./cmd/dovewarden
+./dovewarden --http-addr :8080 --metrics-addr :9090
 ```
 
 ### Test Event Submission (events port)

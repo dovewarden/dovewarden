@@ -31,7 +31,7 @@ Implemented a configurable worker pool for dequeuing and processing events from 
 File: `internal/queue/worker.go`
 
 #### Features:
-- **Configurable number of workers**: Set via `LF_NUM_WORKERS` env var or `-num-workers` flag (default: 4)
+- **Configurable number of workers**: Set via `DOVEWARDEN_NUM_WORKERS` env var or `-num-workers` flag (default: 4)
 - **Worker coordination**: Uses WaitGroup and context for clean shutdown
 - **Error handling**: Failed events are automatically requeued
 - **Graceful shutdown**: Stops accepting new tasks but waits for active tasks to complete
@@ -54,11 +54,11 @@ File: `internal/config/config.go`
 New fields:
 - `NumWorkers int` (default: 4)
 - Can be set via:
-  - Environment variable: `LF_NUM_WORKERS=8`
+  - Environment variable: `DOVEWARDEN_NUM_WORKERS=8`
   - Command-line flag: `--num-workers=8`
 
 ### 7. Main Application Integration
-File: `cmd/lightfeather/main.go`
+File: `cmd/dovewarden/main.go`
 
 Changes:
 - Initialize WorkerPool after queue creation
@@ -82,12 +82,12 @@ Changes:
 
 ```bash
 # Start with 8 workers on custom Redis port
-export LF_NUM_WORKERS=8
-export LF_REDIS_ADDR=127.0.0.1:6380
-./lightfeather
+export DOVEWARDEN_NUM_WORKERS=8
+export DOVEWARDEN_REDIS_ADDR=127.0.0.1:6380
+./dovewarden
 
 # Or with command-line flags
-./lightfeather --num-workers=8 --redis-addr=127.0.0.1:6380
+./dovewarden --num-workers=8 --redis-addr=127.0.0.1:6380
 ```
 
 ## Shutdown Behavior
