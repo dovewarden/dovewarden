@@ -3,7 +3,32 @@
 version: '3'
 set: [errexit, nounset, pipefail]
 
+env:
+  GIT_SHA:
+    sh: git rev-parse --short HEAD
+  GIT_SHA_LONG:
+    sh: git rev-parse HEAD
+  GIT_BRANCH:
+    sh: git rev-parse --abbrev-ref HEAD
+  GIT_BRANCH_CLEAN:
+    sh: git rev-parse --abbrev-ref HEAD | tr '/' '-'
+  GIT_TAG:
+    sh: git describe --tags --exact-match 2>/dev/null || true
+
 tasks:
+  info:
+    desc: Display git environment variables
+    silent: true
+    cmd: |
+      cat <<EOT
+      Git Information:
+        SHA (short):    {{.GIT_SHA}}
+        SHA (long):     {{.GIT_SHA_LONG}}
+        Branch:         {{.GIT_BRANCH}}
+        Branch (clean): {{.GIT_BRANCH_CLEAN}}
+        Tag:            {{.GIT_TAG}}
+      EOT
+
   check:
     desc: Run all checks (lint, fmt, test)
     cmds:
