@@ -67,6 +67,11 @@ tasks:
 
   lint:golangci-lint:
     desc: Run golangci-lint
+    sources:
+    - go.mod
+    - go.sum
+    - "**/*.go"
+    - .golangci.yml
     silent: true
     cmds:
     - mkdir -p $(go env GOCACHE) $(go env GOMODCACHE) ~/.cache/golangci-lint
@@ -80,6 +85,11 @@ tasks:
 
   fmt:golangci-lint:
     desc: Run gofmt via golangci-lint
+    sources:
+    - go.mod
+    - go.sum
+    - "**/*.go"
+    - .golangci.yml
     silent: true
     cmds:
     - mkdir -p $(go env GOCACHE) $(go env GOMODCACHE) ~/.cache/golangci-lint
@@ -93,6 +103,11 @@ tasks:
 
   go:test:
     desc: Run go tests
+    sources:
+    - go.mod
+    - go.sum
+    - "**/*.go"
+    - fixtures/**
     cmds:
     - go test -v ./...
 
@@ -134,13 +149,32 @@ tasks:
 
   integration:dependencies:
     desc: Set up dependencies for integration tests
+    deps:
+    - task: integration:dependencies:dovecot
+    - task: integration:dependencies:dovewarden
+
+  integration:dependencies:dovecot:
+    desc: Set up dependencies for integration tests
     cmds:
     - docker compose up --wait dovecot-a dovecot-b dovecot-test
-    # allow running dovewarden from development environment if required
-    - test "{{.EXTERNAL_DOVEWARDEN}}" = "true" || docker compose up --wait dovewarden
+
+  integration:dependencies:dovewarden:
+    desc: Set up dependencies for integration tests
+    status:
+    # only run if dovewarden is not already running, eg. from development environment
+    - curl --silent --fail http://localhost:9090/metrics | grep dovewarden
+    cmds:
+    - docker compose up --wait dovewarden
 
   integration:imap:cmd:*:
     desc: Run IMAP integration tests
+    sources:
+    - go.mod
+    - go.sum
+    - docker-compose.yaml
+    - Dockerfile
+    - "**/*.go"
+    - hack/**
     deps:
     - task: integration:dependencies
     vars:
