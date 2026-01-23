@@ -14,6 +14,8 @@ env:
     sh: git rev-parse --abbrev-ref HEAD | tr '/' '-'
   GIT_TAG:
     sh: git describe --tags --exact-match 2>/dev/null || true
+  GIT_VERSION: "${GIT_TAG:-dev-${GIT_BRANCH_CLEAN}-${GIT_SHA}}"
+  EXTERNAL_DOVEWARDEN: "false"
 
 tasks:
   info:
@@ -27,6 +29,7 @@ tasks:
         Branch:         {{.GIT_BRANCH}}
         Branch (clean): {{.GIT_BRANCH_CLEAN}}
         Tag:            {{.GIT_TAG}}
+        Version:        {{.GIT_VERSION}}
       EOT
 
   check:
@@ -93,6 +96,31 @@ tasks:
     cmds:
     - go test -v ./...
 
+  docker:build:
+    desc: Build Docker image
+    cmds:
+      - |
+        docker build \
+          --build-arg GIT_SHA={{.GIT_SHA}} \
+          --build-arg GIT_BRANCH={{.GIT_BRANCH}} \
+          --build-arg GIT_TAG={{.GIT_TAG}} \
+          -t ghcr.io/dovewarden/dovewarden:{{.GIT_VERSION}} \
+          .
+
+  docker:tag:
+    desc: Tag Docker image with a release tag
+    deps:
+    - task: docker:build
+    - task: check
+    cmd: docker tag ghcr.io/dovewarden/dovewarden:latest ghcr.io/dovewarden/dovewarden:{{.GIT_VERSION}}
+
+  docker:push:
+    desc: Push Docker image to ghcr.io
+    deps:
+      - docker:tag
+    cmds:
+      - docker push ghcr.io/dovewarden/dovewarden:{{.GIT_VERSION}}
+
   integration:
     desc: Run all integration tests
     vars:
@@ -107,7 +135,9 @@ tasks:
   integration:dependencies:
     desc: Set up dependencies for integration tests
     cmds:
-    - docker compose up --wait
+    - docker compose up --wait dovecot-a dovecot-b dovecot-test
+    # allow running dovewarden from development environment if required
+    - test "{{.EXTERNAL_DOVEWARDEN}}" = "true" || docker compose up --wait dovewarden
 
   integration:imap:cmd:*:
     desc: Run IMAP integration tests

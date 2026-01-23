@@ -48,6 +48,8 @@ services:
 
   dovecot-b:
     image: dovecot/dovecot:2.4.2-dev
+    networks:
+    - mybridge
     container_name: dovecot-b
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -67,6 +69,31 @@ services:
     volumes:
       - ./hack/dovecot-b.conf:/etc/dovecot/conf.d/dovecot-b.conf:ro
       - ./hack/dovecot-shared.conf:/etc/dovecot/conf.d/dovecot-shared.conf:ro
+
+  dovewarden:
+    image: ghcr.io/dovewarden/dovewarden:latest
+    build:
+      dockerfile: Dockerfile
+      context: .
+    networks:
+    - mybridge
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
+    container_name: dovewarden
+    ports:
+    - name: events
+      protocol: tcp
+      published: 8080
+      target: 8080
+    - name: metrics
+      protocol: tcp
+      published: 9090
+      target: 9090
+    environment:
+    - DOVEWARDEN_DOVEADM_DEST=tcp:host.docker.internal:31345
+    - DOVEWARDEN_DOVEADM_PASSWORD=doveadm
+    - DOVEWARDEN_DOVEADM_URL=http://host.docker.internal:30080
+    - DOVEWARDEN_DOVEADM_USER=doveadm
 
   redis:
     image: redis:7-alpine
