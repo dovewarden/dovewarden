@@ -14,7 +14,32 @@ env:
     sh: git rev-parse --abbrev-ref HEAD | tr '/' '-'
   GIT_TAG:
     sh: git describe --tags --exact-match 2>/dev/null || true
-  GIT_VERSION: "${GIT_TAG:-dev-${GIT_BRANCH_CLEAN}-${GIT_SHA}}"
+  GIT_VERSION:
+    sh: |
+      # Check if current commit is tagged
+      if git describe --tags --exact-match 2>/dev/null; then
+        # Use the tag as-is
+        git describe --tags --exact-match
+      else
+        # Get the most recent tag on this branch
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        
+        # Parse version components (handle both vX.Y.Z and X.Y.Z formats)
+        VERSION_NUMBER=$(echo "$LATEST_TAG" | sed 's/^v//')
+        MAJOR=$(echo "$VERSION_NUMBER" | cut -d. -f1)
+        MINOR=$(echo "$VERSION_NUMBER" | cut -d. -f2)
+        PATCH=$(echo "$VERSION_NUMBER" | cut -d. -f3 | cut -d- -f1)
+        
+        # Increment patch version
+        NEXT_PATCH=$((PATCH + 1))
+        
+        # Get branch name and short SHA
+        BRANCH=$(git rev-parse --abbrev-ref HEAD | tr '/' '-')
+        SHA=$(git rev-parse --short HEAD)
+        
+        # Build semver-compatible version string
+        echo "v${MAJOR}.${MINOR}.${NEXT_PATCH}-${BRANCH}-${SHA}"
+      fi
   EXTERNAL_DOVEWARDEN: "false"
 
 tasks:
@@ -120,6 +145,7 @@ tasks:
           --build-arg GIT_SHA={{.GIT_SHA}} \
           --build-arg GIT_BRANCH={{.GIT_BRANCH}} \
           --build-arg GIT_TAG={{.GIT_TAG}} \
+          --build-arg GIT_VERSION={{.GIT_VERSION}} \
           -t ghcr.io/dovewarden/dovewarden:{{.GIT_VERSION}} \
           .
 

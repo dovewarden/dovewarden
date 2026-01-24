@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"flag"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
@@ -20,7 +22,21 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+var (
+	version     = "v0.0.0-dev" // Set by ldflags during build
+	showVersion bool
+)
+
+func init() {
+	flag.BoolVar(&showVersion, "version", false, "Show version and exit")
+	flag.Parse()
+}
+
 func main() {
+	if showVersion {
+		fmt.Printf("dovewarden version %s\n", version)
+		os.Exit(0)
+	}
 	// Initialize structured logging
 	// LOG_FORMAT environment variable controls output: "json" or "text" (default)
 	logFormat := strings.ToLower(os.Getenv("LOG_FORMAT"))
@@ -40,6 +56,9 @@ func main() {
 	}
 
 	slog.SetDefault(logger)
+
+	// Log version information
+	slog.Info("dovewarden starting", "version", version)
 
 	// Load configuration
 	cfg := config.Load()

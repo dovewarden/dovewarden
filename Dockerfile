@@ -1,5 +1,10 @@
 FROM golang:1.25-alpine AS builder
 
+ARG GIT_SHA=unknown
+ARG GIT_BRANCH=unknown
+ARG GIT_TAG=
+ARG GIT_VERSION=v0.0.0
+
 RUN apk add --no-cache ca-certificates tzdata
 
 WORKDIR /build
@@ -10,7 +15,7 @@ RUN go mod download
 COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags='-w -s -extldflags "-static"' \
+    -ldflags="-w -s -extldflags '-static' -X main.version=${GIT_VERSION}" \
     -a \
     -o /app/dovewarden \
     ./cmd/dovewarden
