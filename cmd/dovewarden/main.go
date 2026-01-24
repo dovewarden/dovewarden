@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	version     = "v0.0.0-dev" // Set by ldflags during build
+	version     = "0.0.0-dev" // Set by ldflags during build
 	showVersion bool
 )
 

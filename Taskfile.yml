@@ -17,18 +17,17 @@ env:
   GIT_VERSION:
     sh: |
       # Check if current commit is tagged
-      if git describe --tags --exact-match 2>/dev/null; then
+      if git describe --tags --exact-match 2>/dev/null >/dev/null; then
         # Use the tag as-is
         git describe --tags --exact-match
       else
         # Get the most recent tag on this branch
-        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
         
         # Parse version components (handle both vX.Y.Z and X.Y.Z formats)
-        VERSION_NUMBER=$(echo "$LATEST_TAG" | sed 's/^v//')
-        MAJOR=$(echo "$VERSION_NUMBER" | cut -d. -f1)
-        MINOR=$(echo "$VERSION_NUMBER" | cut -d. -f2)
-        PATCH=$(echo "$VERSION_NUMBER" | cut -d. -f3 | cut -d- -f1)
+        MAJOR=$(echo "$LATEST_TAG" | cut -d. -f1)
+        MINOR=$(echo "$LATEST_TAG" | cut -d. -f2)
+        PATCH=$(echo "$LATEST_TAG" | cut -d. -f3 | cut -d- -f1)
         
         # Increment patch version
         NEXT_PATCH=$((PATCH + 1))
@@ -38,7 +37,7 @@ env:
         SHA=$(git rev-parse --short HEAD)
         
         # Build semver-compatible version string
-        echo "v${MAJOR}.${MINOR}.${NEXT_PATCH}-${BRANCH}-${SHA}"
+        echo "${MAJOR}.${MINOR}.${NEXT_PATCH}-${BRANCH}-${SHA}"
       fi
   EXTERNAL_DOVEWARDEN: "false"
 
@@ -149,12 +148,31 @@ tasks:
           -t ghcr.io/dovewarden/dovewarden:{{.GIT_VERSION}} \
           .
 
-  helm:lint:
+  lint:helm:
     desc: Lint Helm chart
     sources:
       - helm/dovewarden/**
     cmds:
       - helm lint helm/dovewarden
+
+  helm:package:
+    desc: Package Helm chart as OCI bundle
+    deps:
+      - lint:helm
+    sources:
+      - helm/dovewarden/**
+    generates:
+      - dovewarden-{{.GIT_VERSION}}.tgz
+    cmd: helm package --app-version "{{.GIT_VERSION}}" --version "{{.GIT_VERSION}}" helm/dovewarden
+
+  helm:push:
+    desc: Push Helm chart to OCI registry (ghcr.io)
+    deps:
+      - helm:package
+    cmds:
+      - |
+        helm push dovewarden-${GIT_VERSION}.tgz oci://ghcr.io/dovewarden
+        rm -f dovewarden-${GIT_VERSION}.tgz
 
   docker:tag:
     desc: Tag Docker image with a release tag
@@ -169,6 +187,14 @@ tasks:
       - docker:tag
     cmds:
       - docker push ghcr.io/dovewarden/dovewarden:{{.GIT_VERSION}}
+
+  release:
+    desc: Release both Docker image and Helm chart
+    deps:
+      - docker:push
+      - helm:push
+    cmds:
+      - echo "Released dovewarden {{.GIT_VERSION}}"
 
   integration:
     desc: Run all integration tests
