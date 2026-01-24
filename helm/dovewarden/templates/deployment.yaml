@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "dovewarden.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
+  {{- if not (and .Values.autoscaling .Values.autoscaling.enabled) }}
   {{- if and (eq .Values.config.redis.mode "inmemory") (gt (.Values.replicaCount | int) 1) }}
   {{ fail "miniredis mode only allows single replica" }}
   {{- end }}

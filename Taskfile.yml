@@ -44,6 +44,7 @@ tasks:
     desc: Run linters
     cmds:
       - task: lint:golangci-lint
+      - task: lint:helm
 
   fmt:
     desc: Run code formatters
@@ -121,6 +122,13 @@ tasks:
           --build-arg GIT_TAG={{.GIT_TAG}} \
           -t ghcr.io/dovewarden/dovewarden:{{.GIT_VERSION}} \
           .
+
+  helm:lint:
+    desc: Lint Helm chart
+    sources:
+      - helm/dovewarden/**
+    cmds:
+      - helm lint helm/dovewarden
 
   docker:tag:
     desc: Tag Docker image with a release tag
