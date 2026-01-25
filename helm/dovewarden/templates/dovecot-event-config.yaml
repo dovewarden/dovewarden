@@ -1,0 +1,34 @@
+{{- if .Values.dovecotEventConfig.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "dovewarden.fullname" . }}-dovecot-event-config
+  labels:
+    {{- include "dovewarden.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dovecot-event-config
+data:
+  dovewarden.conf: |
+    # forward sync-related events
+    event_exporter {{ .Values.dovecotEventConfig.exporterName }} {
+      driver = http-post
+      http_post_url = http://{{ include "dovewarden.fullname" . }}:8080/events
+
+      format = json
+      time_format = rfc3339
+    }
+
+    metric {{ .Values.dovecotEventConfig.exporterName }} {
+      exporter = {{ .Values.dovecotEventConfig.exporterName }}
+      filter = event=*
+      # special case for DELETE commands: as imaptest also runs these for cleanup, only forward DELETE events if the mailbox
+      # is `imaptest-delete` (such that we do not trigger syncs on non-delete commands), same for append
+      filter = event=imap_command_finished AND tagged_reply_state=OK AND category=service:imap AND ( \
+        cmd_name=APPEND or \
+        cmd_name=CREATE or \
+        cmd_name=DELETE or \
+        cmd_name=EXPUNGE or \
+        cmd_name=RENAME or \
+        cmd_name=STORE \
+      ) {{ .Values.dovecotEventConfig.extraFilters | default "" }}
+    }
+{{- end }}

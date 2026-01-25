@@ -127,6 +127,18 @@ podDisruptionBudget:
   enabled: false
   minAvailable: 1
 
+# Dovecot Event Handler Configuration
+# This creates a ConfigMap that can be sourced by the Dovecot deployment
+# to configure the event handler target and filter
+dovecotEventConfig:
+  enabled: false
+
+  # Name of the event exporter
+  exporterName: "dovewarden"
+
+  # Event filter configuration
+  extraFilters: ''
+
 nodeSelector: {}
 tolerations: []
 affinity: {}
