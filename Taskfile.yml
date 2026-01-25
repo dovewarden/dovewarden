@@ -146,7 +146,7 @@ tasks:
           --build-arg GIT_BRANCH={{.GIT_BRANCH}} \
           --build-arg GIT_TAG={{.GIT_TAG}} \
           --build-arg GIT_VERSION={{.GIT_VERSION}} \
-          -t ghcr.io/dovewarden/dovewarden:{{.GIT_VERSION}} \
+          -t ghcr.io/dovewarden/dovewarden:latest \
           .
 
   lint:helm:
