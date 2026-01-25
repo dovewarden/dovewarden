@@ -15,9 +15,9 @@ type DoveadmEventHandler struct {
 }
 
 // NewDoveadmEventHandler creates a new handler for Doveadm sync operations
-func NewDoveadmEventHandler(baseURL, username, password, destination string, logger *slog.Logger) *DoveadmEventHandler {
+func NewDoveadmEventHandler(baseURL, password, destination string, logger *slog.Logger) *DoveadmEventHandler {
 	return &DoveadmEventHandler{
-		client:      doveadm.NewClient(baseURL, username, password),
+		client:      doveadm.NewClient(baseURL, password),
 		destination: destination,
 		logger:      logger,
 	}

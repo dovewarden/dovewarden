@@ -112,7 +112,6 @@ config:
   # Doveadm configuration
   doveadm:
     url: "http://doveadm:8080"
-    user: ""
     password: ""
     # Sync target of secondary dovecot server, eg. tcp:dovecot-b:12345
     destination: ""

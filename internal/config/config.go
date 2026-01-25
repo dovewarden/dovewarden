@@ -15,7 +15,6 @@ type Config struct {
 	Namespace       string
 	NumWorkers      int
 	DoveadmURL      string
-	DoveadmUser     string
 	DoveadmPassword string
 	DoveadmDest     string // destination for dsync (e.g., "imap")
 }
@@ -30,7 +29,6 @@ func Load() *Config {
 		Namespace:       "dovewarden",
 		NumWorkers:      4,
 		DoveadmURL:      "http://localhost:8080",
-		DoveadmUser:     "",
 		DoveadmPassword: "",
 		DoveadmDest:     "imap",
 	}
@@ -41,7 +39,6 @@ func Load() *Config {
 	flag.StringVar(&cfg.RedisAddr, "redis-addr", envOrDefault("DOVEWARDEN_REDIS_ADDR", cfg.RedisAddr), "Redis address for external mode")
 	flag.StringVar(&cfg.Namespace, "namespace", envOrDefault("DOVEWARDEN_NAMESPACE", cfg.Namespace), "Key namespace prefix")
 	flag.StringVar(&cfg.DoveadmURL, "doveadm-url", envOrDefault("DOVEWARDEN_DOVEADM_URL", cfg.DoveadmURL), "Doveadm API base URL")
-	flag.StringVar(&cfg.DoveadmUser, "doveadm-user", envOrDefault("DOVEWARDEN_DOVEADM_USER", cfg.DoveadmUser), "Doveadm API username")
 	flag.StringVar(&cfg.DoveadmPassword, "doveadm-password", envOrDefault("DOVEWARDEN_DOVEADM_PASSWORD", cfg.DoveadmPassword), "Doveadm API password")
 	flag.StringVar(&cfg.DoveadmDest, "doveadm-dest", envOrDefault("DOVEWARDEN_DOVEADM_DEST", cfg.DoveadmDest), "Doveadm dsync destination")
 

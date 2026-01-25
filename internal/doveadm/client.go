@@ -12,16 +12,14 @@ import (
 // Client handles communication with the Doveadm API
 type Client struct {
 	baseURL  string
-	username string
 	password string
 	client   *http.Client
 }
 
 // NewClient creates a new Doveadm API client
-func NewClient(baseURL, username, password string) *Client {
+func NewClient(baseURL, password string) *Client {
 	return &Client{
 		baseURL:  baseURL,
-		username: username,
 		password: password,
 		client:   &http.Client{},
 	}
@@ -99,7 +97,7 @@ func (c *Client) Sync(ctx context.Context, username string, destination string) 
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(c.username, c.password)
+	req.SetBasicAuth("", c.password)
 
 	resp, err := c.client.Do(req)
 	if err != nil {

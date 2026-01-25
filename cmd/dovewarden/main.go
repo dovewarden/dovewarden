@@ -101,11 +101,13 @@ func main() {
 	workerPool := queue.NewWorkerPool(q, cfg.NumWorkers, logger)
 
 	// Set up Doveadm event handler if credentials are provided
-	if cfg.DoveadmUser != "" && cfg.DoveadmPassword != "" {
-		slog.Info("Setting up Doveadm sync handler")
-		handler := queue.NewDoveadmEventHandler(cfg.DoveadmURL, cfg.DoveadmUser, cfg.DoveadmPassword, cfg.DoveadmDest, logger)
-		workerPool.SetHandler(handler)
+	if cfg.DoveadmPassword == "" {
+		slog.Error("Doveadm password not provided; exiting")
+		os.Exit(1)
 	}
+	slog.Info("Setting up Doveadm sync handler")
+	handler := queue.NewDoveadmEventHandler(cfg.DoveadmURL, cfg.DoveadmPassword, cfg.DoveadmDest, logger)
+	workerPool.SetHandler(handler)
 
 	workerPool.Start(context.Background())
 

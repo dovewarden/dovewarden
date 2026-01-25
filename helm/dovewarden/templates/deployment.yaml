@@ -65,14 +65,6 @@ spec:
               value: "{{ .Values.config.numWorkers | toString }}"
             - name: DOVEWARDEN_DOVEADM_URL
               value: "{{ .Values.config.doveadm.url }}"
-            {{- if .Values.config.doveadm.user }}
-            - name: DOVEWARDEN_DOVEADM_USER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "dovewarden.fullname" . }}-doveadm
-                  key: username
-                  optional: true
-            {{- end }}
             {{- if .Values.config.doveadm.password }}
             - name: DOVEWARDEN_DOVEADM_PASSWORD
               valueFrom:

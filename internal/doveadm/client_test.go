@@ -22,12 +22,12 @@ func TestSyncSuccess(t *testing.T) {
 		}
 
 		// Verify authentication
-		user, pass, ok := r.BasicAuth()
+		_, pass, ok := r.BasicAuth()
 		if !ok {
 			t.Error("expected basic auth")
 		}
-		if user != "testuser" || pass != "testpass" {
-			t.Errorf("unexpected credentials: %s:%s", user, pass)
+		if pass != "testpass" {
+			t.Errorf("unexpected credentials: %s", pass)
 		}
 
 		// Verify content type
@@ -53,7 +53,7 @@ func TestSyncSuccess(t *testing.T) {
 	defer server.Close()
 
 	// Create client and test sync
-	client := NewClient(server.URL, "testuser", "testpass")
+	client := NewClient(server.URL, "testpass")
 	ctx := context.Background()
 
 	err := client.Sync(ctx, "user-a", "imap")
@@ -70,7 +70,7 @@ func TestSyncServerError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(server.URL, "testuser", "testpass")
+	client := NewClient(server.URL, "testpass")
 	ctx := context.Background()
 
 	err := client.Sync(ctx, "user-a", "imap")
@@ -87,7 +87,7 @@ func TestSyncUnauthorized(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(server.URL, "wronguser", "wrongpass")
+	client := NewClient(server.URL, "wrongpass")
 	ctx := context.Background()
 
 	err := client.Sync(ctx, "user-a", "imap")
@@ -151,7 +151,7 @@ func TestSyncPayloadFormat(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(server.URL, "testuser", "testpass")
+	client := NewClient(server.URL, "testpass")
 	ctx := context.Background()
 
 	err := client.Sync(ctx, "test-user", "imap")
