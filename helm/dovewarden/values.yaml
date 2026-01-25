@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: ghcr.io/dovewarden/dovewarden
   pullPolicy: IfNotPresent
-  tag: "dev-main-9f1ce91"
+  tag: ""
 
 imagePullSecrets: []
 nameOverride: ""
