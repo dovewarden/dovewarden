@@ -97,7 +97,7 @@ func (c *Client) Sync(ctx context.Context, username string, destination string) 
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth("", c.password)
+	req.SetBasicAuth("doveadm", c.password)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
