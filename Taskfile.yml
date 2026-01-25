@@ -171,7 +171,7 @@ tasks:
       - helm:package
     cmds:
       - |
-        helm push dovewarden-${GIT_VERSION}.tgz oci://ghcr.io/dovewarden
+        helm push dovewarden-${GIT_VERSION}.tgz oci://ghcr.io/dovewarden/charts
         rm -f dovewarden-${GIT_VERSION}.tgz
 
   docker:tag:
@@ -233,7 +233,7 @@ tasks:
     - go.sum
     - docker-compose.yaml
     - Dockerfile
-    - "**/*.go"
+#    - "**/*.go"
     - hack/**
     deps:
     - task: integration:dependencies
