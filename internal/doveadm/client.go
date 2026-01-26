@@ -25,13 +25,6 @@ func NewClient(baseURL, password string) *Client {
 	}
 }
 
-// SyncRequest represents a dsync request to Doveadm
-type SyncRequest struct {
-	Command     string   `json:"command"` // "sync"
-	Destination []string `json:"destination"`
-	User        string   `json:"user"`
-}
-
 // ResponseError represents an error entry returned by Doveadm
 // [ [ "error", {"type":"exitCode","exitCode":75}, "dovewarden-sync" ] ]
 type ResponseError struct {
