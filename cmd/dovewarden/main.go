@@ -106,7 +106,7 @@ func main() {
 		os.Exit(1)
 	}
 	slog.Info("Setting up Doveadm sync handler")
-	handler := queue.NewDoveadmEventHandler(cfg.DoveadmURL, cfg.DoveadmPassword, cfg.DoveadmDest, logger)
+	handler := queue.NewDoveadmEventHandler(cfg.DoveadmURL, cfg.DoveadmPassword, cfg.DoveadmDest, logger, q)
 	workerPool.SetHandler(handler)
 
 	workerPool.Start(context.Background())

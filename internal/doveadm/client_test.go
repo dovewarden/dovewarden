@@ -56,9 +56,12 @@ func TestSyncSuccess(t *testing.T) {
 	client := NewClient(server.URL, "testpass")
 	ctx := context.Background()
 
-	err := client.Sync(ctx, "user-a", "imap")
+	resp, err := client.Sync(ctx, "user-a", "imap", "")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
+	}
+	if resp == nil {
+		t.Error("expected non-nil response")
 	}
 }
 
@@ -73,7 +76,7 @@ func TestSyncServerError(t *testing.T) {
 	client := NewClient(server.URL, "testpass")
 	ctx := context.Background()
 
-	err := client.Sync(ctx, "user-a", "imap")
+	_, err := client.Sync(ctx, "user-a", "imap", "")
 	if err == nil {
 		t.Error("expected error for 500 status")
 	}
@@ -90,7 +93,7 @@ func TestSyncUnauthorized(t *testing.T) {
 	client := NewClient(server.URL, "wrongpass")
 	ctx := context.Background()
 
-	err := client.Sync(ctx, "user-a", "imap")
+	_, err := client.Sync(ctx, "user-a", "imap", "")
 	if err == nil {
 		t.Error("expected error for 401 status")
 	}
@@ -154,8 +157,95 @@ func TestSyncPayloadFormat(t *testing.T) {
 	client := NewClient(server.URL, "testpass")
 	ctx := context.Background()
 
-	err := client.Sync(ctx, "test-user", "imap")
+	_, err := client.Sync(ctx, "test-user", "imap", "")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+// TestSyncWithState verifies that state parameter is sent when provided
+func TestSyncWithState(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var payload []interface{}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("failed to decode request: %v", err)
+		}
+
+		cmdArray, ok := payload[0].([]interface{})
+		if !ok {
+			t.Fatal("expected array as first element")
+		}
+
+		params, ok := cmdArray[1].(map[string]interface{})
+		if !ok {
+			t.Fatal("expected map for params")
+		}
+
+		// Verify state is present
+		state, ok := params["state"].(string)
+		if !ok || state != "test-state-123" {
+			t.Errorf("expected state 'test-state-123', got %v", params["state"])
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprintf(w, `[["sync",{"state":"new-state-456"},"dovewarden-sync"]]`)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "testpass")
+	ctx := context.Background()
+
+	resp, err := client.Sync(ctx, "test-user", "imap", "test-state-123")
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if resp == nil {
+		t.Fatal("expected non-nil response")
+	}
+	if resp.State != "new-state-456" {
+		t.Errorf("expected state 'new-state-456', got %s", resp.State)
+	}
+}
+
+// TestSyncWithoutState verifies that state parameter is omitted when empty
+func TestSyncWithoutState(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var payload []interface{}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("failed to decode request: %v", err)
+		}
+
+		cmdArray, ok := payload[0].([]interface{})
+		if !ok {
+			t.Fatal("expected array as first element")
+		}
+
+		params, ok := cmdArray[1].(map[string]interface{})
+		if !ok {
+			t.Fatal("expected map for params")
+		}
+
+		// Verify state is NOT present
+		if _, exists := params["state"]; exists {
+			t.Error("state should not be present when empty string is provided")
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprintf(w, `[["sync",{},"dovewarden-sync"]]`)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "testpass")
+	ctx := context.Background()
+
+	resp, err := client.Sync(ctx, "test-user", "imap", "")
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if resp == nil {
+		t.Fatal("expected non-nil response")
+	}
+	if resp.State != "" {
+		t.Errorf("expected empty state, got %s", resp.State)
 	}
 }
