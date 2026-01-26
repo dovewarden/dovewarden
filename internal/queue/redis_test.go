@@ -307,3 +307,97 @@ func TestDequeueStatsIncrement(t *testing.T) {
 		t.Fatalf("expected 3 dequeues total, got %d", deqs)
 	}
 }
+
+// TestReplicationState verifies state storage and retrieval
+func TestReplicationState(t *testing.T) {
+	q, err := NewInMemoryQueue("testns", "")
+	if err != nil {
+		t.Fatalf("failed to create queue: %v", err)
+	}
+	defer func() {
+		if cerr := q.Close(); cerr != nil {
+			t.Fatalf("failed to close queue: %v", cerr)
+		}
+	}()
+
+	ctx := context.Background()
+	username := "user@example.com"
+
+	// Initially, no state should exist
+	state, err := q.GetReplicationState(ctx, username)
+	if err != nil {
+		t.Fatalf("failed to get initial state: %v", err)
+	}
+	if state != "" {
+		t.Errorf("expected empty state initially, got %s", state)
+	}
+
+	// Store a state
+	testState := "state-abc-123"
+	if err := q.SetReplicationState(ctx, username, testState); err != nil {
+		t.Fatalf("failed to set state: %v", err)
+	}
+
+	// Retrieve the stored state
+	state, err = q.GetReplicationState(ctx, username)
+	if err != nil {
+		t.Fatalf("failed to get state: %v", err)
+	}
+	if state != testState {
+		t.Errorf("expected state %s, got %s", testState, state)
+	}
+
+	// Update the state
+	newState := "state-def-456"
+	if err := q.SetReplicationState(ctx, username, newState); err != nil {
+		t.Fatalf("failed to update state: %v", err)
+	}
+
+	// Verify the updated state
+	state, err = q.GetReplicationState(ctx, username)
+	if err != nil {
+		t.Fatalf("failed to get updated state: %v", err)
+	}
+	if state != newState {
+		t.Errorf("expected state %s, got %s", newState, state)
+	}
+}
+
+// TestReplicationStateMultipleUsers verifies state isolation per user
+func TestReplicationStateMultipleUsers(t *testing.T) {
+	q, err := NewInMemoryQueue("testns", "")
+	if err != nil {
+		t.Fatalf("failed to create queue: %v", err)
+	}
+	defer func() {
+		if cerr := q.Close(); cerr != nil {
+			t.Fatalf("failed to close queue: %v", cerr)
+		}
+	}()
+
+	ctx := context.Background()
+
+	// Set states for different users
+	users := map[string]string{
+		"user1@example.com": "state-user1-abc",
+		"user2@example.com": "state-user2-def",
+		"user3@example.com": "state-user3-ghi",
+	}
+
+	for username, expectedState := range users {
+		if err := q.SetReplicationState(ctx, username, expectedState); err != nil {
+			t.Fatalf("failed to set state for %s: %v", username, err)
+		}
+	}
+
+	// Verify each user has their own state
+	for username, expectedState := range users {
+		state, err := q.GetReplicationState(ctx, username)
+		if err != nil {
+			t.Fatalf("failed to get state for %s: %v", username, err)
+		}
+		if state != expectedState {
+			t.Errorf("expected state %s for %s, got %s", expectedState, username, state)
+		}
+	}
+}

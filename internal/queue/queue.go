@@ -19,4 +19,10 @@ type Queue interface {
 
 	// Close closes the queue and releases resources.
 	Close() error
+
+	// GetReplicationState retrieves the stored replication state for a user.
+	GetReplicationState(ctx context.Context, username string) (string, error)
+
+	// SetReplicationState stores the replication state for a user.
+	SetReplicationState(ctx context.Context, username string, state string) error
 }

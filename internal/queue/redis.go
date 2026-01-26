@@ -129,3 +129,31 @@ func (q *InMemoryQueue) GetQueueSize(ctx context.Context, username string) (int6
 	}
 	return size, nil
 }
+
+// GetReplicationState retrieves the stored replication state for a user.
+// Returns empty string if no state exists.
+func (q *InMemoryQueue) GetReplicationState(ctx context.Context, username string) (string, error) {
+	key := fmt.Sprintf("%s:state:%s", q.ns, username)
+	state, err := q.client.Get(ctx, key).Result()
+	if err == redis.Nil {
+		// No state stored yet
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to get replication state: %w", err)
+	}
+	return state, nil
+}
+
+// SetReplicationState stores the replication state for a user.
+// The state is used for incremental sync in the next replication.
+// State expires after 30 days to prevent unbounded Redis memory growth.
+func (q *InMemoryQueue) SetReplicationState(ctx context.Context, username string, state string) error {
+	key := fmt.Sprintf("%s:state:%s", q.ns, username)
+	// Set TTL to 30 days - states older than this are considered stale
+	ttl := 30 * 24 * time.Hour
+	if err := q.client.Set(ctx, key, state, ttl).Err(); err != nil {
+		return fmt.Errorf("failed to set replication state: %w", err)
+	}
+	return nil
+}
