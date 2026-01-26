@@ -94,12 +94,12 @@ func (c *Client) Sync(ctx context.Context, username string, destination string, 
 		"destination": []string{destination},
 		"user":        username,
 	}
-	
+
 	// Add state parameter if provided
 	if state != "" {
 		params["state"] = state
 	}
-	
+
 	payload := []interface{}{
 		[]interface{}{
 			"sync",
@@ -154,7 +154,7 @@ func (c *Client) Sync(ctx context.Context, username string, destination string, 
 			}
 			return nil, fmt.Errorf("doveadm sync error (tag %s): unknown reason", entry.Tag)
 		}
-		
+
 		// Extract state from response if available
 		if entry.Response != nil {
 			if stateVal, ok := entry.Response["state"].(string); ok {
