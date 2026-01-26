@@ -65,12 +65,16 @@ func (r *responseEntry) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("failed to parse status: %w", err)
 	}
 
-	// Parse the second element - could be an error or a response object
-	var errPayload ResponseError
-	if err := json.Unmarshal(raw[1], &errPayload); err == nil && (errPayload.Type != "" || errPayload.ExitCode != 0) {
+	// Parse the second element based on status
+	// If status is "error", parse as error payload; otherwise parse as response object
+	if r.Status == "error" {
+		var errPayload ResponseError
+		if err := json.Unmarshal(raw[1], &errPayload); err != nil {
+			return fmt.Errorf("failed to parse error payload: %w", err)
+		}
 		r.Error = &errPayload
 	} else {
-		// Try to parse as response object
+		// Parse as response object for successful responses
 		var respObj map[string]interface{}
 		if err := json.Unmarshal(raw[1], &respObj); err == nil {
 			r.Response = respObj

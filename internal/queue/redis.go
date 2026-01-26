@@ -147,9 +147,12 @@ func (q *InMemoryQueue) GetReplicationState(ctx context.Context, username string
 
 // SetReplicationState stores the replication state for a user.
 // The state is used for incremental sync in the next replication.
+// State expires after 30 days to prevent unbounded Redis memory growth.
 func (q *InMemoryQueue) SetReplicationState(ctx context.Context, username string, state string) error {
 	key := fmt.Sprintf("%s:state:%s", q.ns, username)
-	if err := q.client.Set(ctx, key, state, 0).Err(); err != nil {
+	// Set TTL to 30 days - states older than this are considered stale
+	ttl := 30 * 24 * time.Hour
+	if err := q.client.Set(ctx, key, state, ttl).Err(); err != nil {
 		return fmt.Errorf("failed to set replication state: %w", err)
 	}
 	return nil
