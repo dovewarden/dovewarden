@@ -1,0 +1,17 @@
+state: selected
+messages: all
+
+ok select $mailbox
+* 0 RECENT
+
+ok fetch 1 uid
+* 1 fetch (uid $uid)
+
+ok STORE 1 +FLAGS (\Deleted)
+
+ok fetch 1:* (envelope, flags)
+* 1 FETCH (FLAGS (\Deleted $HasNoAttachment) ENVELOPE ("Thu, 15 Feb 2007 01:02:03 +0200" NIL ((NIL NIL "user" "domain")) ((NIL NIL "user" "domain")) ((NIL NIL "user" "domain")) NIL NIL NIL NIL NIL))
+ok UID EXPUNGE $uid
+* 1 EXPUNGE
+
+bad fetch 1:* (envelope, flags)

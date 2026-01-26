@@ -23,12 +23,19 @@ data:
       # special case for DELETE commands: as imaptest also runs these for cleanup, only forward DELETE events if the mailbox
       # is `imaptest-delete` (such that we do not trigger syncs on non-delete commands), same for append
       filter = event=imap_command_finished AND tagged_reply_state=OK AND category=service:imap AND ( \
-        cmd_name=APPEND or \
-        cmd_name=CREATE or \
-        cmd_name=DELETE or \
-        cmd_name=EXPUNGE or \
-        cmd_name=RENAME or \
-        cmd_name=STORE \
+        cmd_name="APPEND" or \
+        cmd_name="COPY" or \
+        cmd_name="CLOSE" or \
+        cmd_name="CREATE" or \
+        cmd_name="DELETE" or \
+        cmd_name="EXPUNGE" or \
+        cmd_name="MOVE" or \
+        cmd_name="RENAME" or \
+        cmd_name="STORE" or \
+        cmd_name="UID COPY" or \
+        cmd_name="UID EXPUNGE" or \
+        cmd_name="UID MOVE" or \
+        cmd_name="UID STORE" \
       ) {{ .Values.dovecotEventConfig.extraFilters | default "" }}
     }
 {{- end }}

@@ -214,8 +214,18 @@ tasks:
     - task: integration:dependencies:dovecot
     - task: integration:dependencies:dovewarden
 
+  integration:dependencies:dovecot:restart:
+    desc: Restart dovecot containers to apply any config changes
+    sources:
+    - docker-compose.yml
+    - hack/dovecot-*.conf
+    cmds:
+    - docker compose restart dovecot-a dovecot-b
+
   integration:dependencies:dovecot:
     desc: Set up dependencies for integration tests
+    deps:
+    - task: integration:dependencies:dovecot:restart
     cmds:
     - docker compose up --wait dovecot-a dovecot-b dovecot-test
 
@@ -229,18 +239,13 @@ tasks:
 
   integration:imap:cmd:*:
     desc: Run IMAP integration tests
-    sources:
-    - go.mod
-    - go.sum
-    - docker-compose.yaml
-    - Dockerfile
-    - "**/*.go"
-    - hack/**
+    silent: true
     deps:
     - task: integration:dependencies
     vars:
       imap_command: "{{index .MATCH 0}}"
     cmds:
+    - echo "Running IMAP integration test for command {{.imap_command}}"
     # purge all mailboxes of the user from both dovecots
     - docker compose exec dovecot-a rm -rf /srv/vmail/{{.imap_command}}
     - docker compose exec dovecot-b rm -rf /srv/vmail/{{.imap_command}}
@@ -251,4 +256,4 @@ tasks:
     # TODO check metrics and wait until queue is empty instead of sleeping
     - sleep 2
     # check if user was created to see if sync was executed (doveadm mailbox list would already create the user)
-    - docker compose exec dovecot-b test -d /srv/vmail/{{.imap_command}} || (echo "User {{.imap_command}} was not created on dovecot-b, sync did not happen" && exit 1)
+    - docker compose exec dovecot-b test -d /srv/vmail/{{.imap_command}} || (echo "User {{.imap_command}} was not created on dovecot-b, sync did not happen" >&2 && exit 1)

@@ -1,0 +1,6 @@
+state: selected
+messages: all
+
+ok unselect
+
+ok delete $mailbox

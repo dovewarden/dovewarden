@@ -159,6 +159,45 @@ func TestFilterEdgeCases(t *testing.T) {
 			t.Fatalf("expected success for RENAME, got res=%v err=%v", res, err)
 		}
 	})
+
+	t.Run("DELETE command (lowercase)", func(t *testing.T) {
+		ev := Event{
+			Event:  "imap_command_finished",
+			Fields: Fields{User: "dave", CmdName: "delete"},
+		}
+		data, _ := json.Marshal(ev)
+		res, err := Filter(data)
+		if err != nil || res == nil {
+			t.Fatalf("expected success for DELETE, got res=%v err=%v", res, err)
+		}
+		if res.CmdName != "delete" {
+			t.Fatalf("expected CmdName to be original 'delete', got %q", res.CmdName)
+		}
+	})
+
+	t.Run("UID DELETE command", func(t *testing.T) {
+		ev := Event{
+			Event:  "imap_command_finished",
+			Fields: Fields{User: "eve", CmdName: "UID DELETE"},
+		}
+		data, _ := json.Marshal(ev)
+		res, err := Filter(data)
+		if err != nil || res == nil {
+			t.Fatalf("expected success for UID DELETE, got res=%v err=%v", res, err)
+		}
+	})
+
+	t.Run("UID DELETE command (lowercase)", func(t *testing.T) {
+		ev := Event{
+			Event:  "imap_command_finished",
+			Fields: Fields{User: "frank", CmdName: "uid delete"},
+		}
+		data, _ := json.Marshal(ev)
+		res, err := Filter(data)
+		if err != nil || res == nil {
+			t.Fatalf("expected success for uid delete, got res=%v err=%v", res, err)
+		}
+	})
 }
 
 func TestFilterValidation(t *testing.T) {
@@ -174,6 +213,127 @@ func TestFilterValidation(t *testing.T) {
 				Fields: Fields{
 					User:    "testuser",
 					CmdName: "APPEND",
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "valid DELETE event",
+			event: Event{
+				Event: "imap_command_finished",
+				Fields: Fields{
+					User:    "testuser",
+					CmdName: "DELETE",
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "valid UID DELETE event",
+			event: Event{
+				Event: "imap_command_finished",
+				Fields: Fields{
+					User:    "testuser",
+					CmdName: "UID DELETE",
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "valid COPY event",
+			event: Event{
+				Event: "imap_command_finished",
+				Fields: Fields{
+					User:    "testuser",
+					CmdName: "COPY",
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "valid UID COPY event",
+			event: Event{
+				Event: "imap_command_finished",
+				Fields: Fields{
+					User:    "testuser",
+					CmdName: "UID COPY",
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "valid MOVE event",
+			event: Event{
+				Event: "imap_command_finished",
+				Fields: Fields{
+					User:    "testuser",
+					CmdName: "MOVE",
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "valid UID MOVE event",
+			event: Event{
+				Event: "imap_command_finished",
+				Fields: Fields{
+					User:    "testuser",
+					CmdName: "UID MOVE",
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "valid UID EXPUNGE event",
+			event: Event{
+				Event: "imap_command_finished",
+				Fields: Fields{
+					User:    "testuser",
+					CmdName: "UID EXPUNGE",
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "valid DELETEACL event",
+			event: Event{
+				Event: "imap_command_finished",
+				Fields: Fields{
+					User:    "testuser",
+					CmdName: "DELETEACL",
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "valid SETACL event",
+			event: Event{
+				Event: "imap_command_finished",
+				Fields: Fields{
+					User:    "testuser",
+					CmdName: "SETACL",
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "valid SETMETADATA event",
+			event: Event{
+				Event: "imap_command_finished",
+				Fields: Fields{
+					User:    "testuser",
+					CmdName: "SETMETADATA",
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "valid SETQUOTA event",
+			event: Event{
+				Event: "imap_command_finished",
+				Fields: Fields{
+					User:    "testuser",
+					CmdName: "SETQUOTA",
 				},
 			},
 			expectedErr: nil,

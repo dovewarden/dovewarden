@@ -1,0 +1,9 @@
+state: selected
+messages: all
+
+ok MOVE 1 INBOX
+
+ok select INBOX
+
+ok fetch 1:* (envelope, flags)
+* 1 FETCH (FLAGS ($HasNoAttachment) ENVELOPE ("Thu, 15 Feb 2007 01:02:03 +0200" NIL ((NIL NIL "user" "domain")) ((NIL NIL "user" "domain")) ((NIL NIL "user" "domain")) NIL NIL NIL NIL NIL))
