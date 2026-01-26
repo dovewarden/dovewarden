@@ -1,2 +1,4 @@
 .idea
 .task
+/dovewarden
+*.tgz
