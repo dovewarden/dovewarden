@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/dovewarden/dovewarden/internal/config"
+	"github.com/dovewarden/dovewarden/internal/doveadm"
 	"github.com/dovewarden/dovewarden/internal/metrics"
 	"github.com/dovewarden/dovewarden/internal/queue"
 	"github.com/dovewarden/dovewarden/internal/server"
@@ -114,6 +115,27 @@ func main() {
 
 	workerPool.Start(context.Background())
 
+	// Initialize background replication service if enabled
+	var backgroundReplicationService *queue.BackgroundReplicationService
+	if cfg.BackgroundReplicationEnabled {
+		slog.Info("Initializing background replication service",
+			"enabled", cfg.BackgroundReplicationEnabled,
+			"interval", cfg.BackgroundReplicationInterval,
+			"threshold", cfg.BackgroundReplicationThreshold,
+		)
+		doveadmClient := doveadm.NewClient(cfg.DoveadmURL, cfg.DoveadmPassword)
+		backgroundReplicationService = queue.NewBackgroundReplicationService(
+			doveadmClient,
+			q,
+			logger,
+			cfg.BackgroundReplicationInterval,
+			cfg.BackgroundReplicationThreshold,
+		)
+		backgroundReplicationService.Start(context.Background())
+	} else {
+		slog.Info("Background replication disabled")
+	}
+
 	// Create HTTP server for events
 	eventSrv := server.New(cfg.HTTPAddr, q, m)
 	eventsHTTP := &http.Server{Addr: cfg.HTTPAddr, Handler: eventSrv.Handler()}
@@ -181,7 +203,14 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Stop worker pool first (gracefully)
+	// Stop background replication service first if enabled
+	if cfg.BackgroundReplicationEnabled && backgroundReplicationService != nil {
+		if err := backgroundReplicationService.Stop(ctx); err != nil {
+			slog.Error("error stopping background replication service", "error", err)
+		}
+	}
+
+	// Stop worker pool (gracefully)
 	if err := workerPool.Stop(ctx); err != nil {
 		slog.Error("error stopping worker pool", "error", err)
 	}

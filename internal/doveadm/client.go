@@ -171,3 +171,100 @@ func (c *Client) Sync(ctx context.Context, username string, destination string, 
 
 	return syncResp, nil
 }
+
+// User represents a user returned by the user list command
+type User struct {
+	Username string `json:"username"`
+	UID      string `json:"uid"`
+	GID      string `json:"gid"`
+	Home     string `json:"home"`
+}
+
+// ListUsers retrieves all users from the doveadm API
+func (c *Client) ListUsers(ctx context.Context) ([]User, error) {
+	// Build the request payload according to Doveadm API format:
+	// [["user",{"userMask":"*"},"tag1"]]
+	params := map[string]interface{}{
+		"userMask": "*",
+	}
+
+	payload := []interface{}{
+		[]interface{}{
+			"user",
+			params,
+			"dovewarden-list-users",
+		},
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/doveadm/v1", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth("doveadm", c.password)
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	// Read response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	// Check for HTTP errors
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("doveadm user list failed with status %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	// Parse response
+	var respPayload []responseEntry
+	if err := json.Unmarshal(respBody, &respPayload); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	var users []User
+	for _, entry := range respPayload {
+		if entry.Status == "error" {
+			if entry.Error != nil {
+				return nil, fmt.Errorf("doveadm user list error (tag %s): %s (exitCode %d)", entry.Tag, entry.Error.Type, entry.Error.ExitCode)
+			}
+			return nil, fmt.Errorf("doveadm user list error (tag %s): unknown reason", entry.Tag)
+		}
+
+		// Extract users from response
+		if len(entry.ResponseList) > 0 {
+			for _, userMap := range entry.ResponseList {
+				user := User{}
+				if username, ok := userMap["username"].(string); ok {
+					user.Username = username
+				}
+				if uid, ok := userMap["uid"].(string); ok {
+					user.UID = uid
+				}
+				if gid, ok := userMap["gid"].(string); ok {
+					user.GID = gid
+				}
+				if home, ok := userMap["home"].(string); ok {
+					user.Home = home
+				}
+				if user.Username != "" {
+					users = append(users, user)
+				}
+			}
+		}
+	}
+
+	return users, nil
+}
