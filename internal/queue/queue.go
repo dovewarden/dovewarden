@@ -2,6 +2,7 @@ package queue
 
 import (
 	"context"
+	"time"
 )
 
 // Queue defines the interface for a priority queue implementation.
@@ -25,4 +26,11 @@ type Queue interface {
 
 	// SetReplicationState stores the replication state for a user.
 	SetReplicationState(ctx context.Context, username string, state string) error
+
+	// GetLastReplicationTime retrieves the timestamp of the last replication for a user.
+	// Returns zero time if no replication has been performed.
+	GetLastReplicationTime(ctx context.Context, username string) (time.Time, error)
+
+	// SetLastReplicationTime stores the timestamp of the last replication for a user.
+	SetLastReplicationTime(ctx context.Context, username string, t time.Time) error
 }

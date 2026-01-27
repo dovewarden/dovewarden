@@ -3,6 +3,7 @@ package queue
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/dovewarden/dovewarden/internal/doveadm"
 )
@@ -50,6 +51,12 @@ func (h *DoveadmEventHandler) Handle(ctx context.Context, username string) error
 		} else {
 			h.logger.Debug("Stored replication state", "username", username)
 		}
+	}
+
+	// Record the timestamp of this successful replication
+	if err := h.queue.SetLastReplicationTime(ctx, username, time.Now()); err != nil {
+		h.logger.Warn("Failed to store last replication time", "username", username, "error", err)
+		// Don't fail the sync operation if timestamp storage fails
 	}
 
 	h.logger.Info("dsync completed", "username", username)

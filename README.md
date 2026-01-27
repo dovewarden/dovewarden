@@ -7,6 +7,7 @@ A lightweight event processor for Dovecot's event API. Receives IMAP command eve
 - **HTTP Event Receiver**: Accepts JSON events from Dovecot's event API
 - **Event Filtering**: Passes only `imap_command_finished` events
 - **Priority Queue**: Events stored in a Redis-compatible sorted set per username
+- **Background Replication**: Periodic replication of all users to cover missed events
 - **In-Memory Development Mode**: Uses miniredis for zero-dependency local development
 - **Prometheus Metrics**: Full instrumentation for monitoring
 - **Separate ports for events and metrics**
@@ -46,6 +47,25 @@ Environment variables (with CLI flag overrides):
 - `DOVEWARDEN_REDIS_MODE` (`--redis-mode`): Redis mode: `inmemory` or `external` (default: `inmemory`)
 - `DOVEWARDEN_REDIS_ADDR` (`--redis-addr`): Redis server address for external mode (default: `localhost:6379`)
 - `DOVEWARDEN_NAMESPACE` (`--namespace`): Key namespace prefix for queue keys (default: `dovewarden`)
+- `DOVEWARDEN_NUM_WORKERS` (`--num-workers`): Number of worker goroutines for dequeuing (default: `4`)
+- `DOVEWARDEN_DOVEADM_URL` (`--doveadm-url`): Doveadm API base URL (default: `http://localhost:8080`)
+- `DOVEWARDEN_DOVEADM_PASSWORD` (`--doveadm-password`): Doveadm API password (required)
+- `DOVEWARDEN_DOVEADM_DEST` (`--doveadm-dest`): Doveadm dsync destination (default: `imap`)
+- `DOVEWARDEN_LOG_LEVEL` (`--log-level`): Log level: debug, info, warn, error (default: `info`)
+- `DOVEWARDEN_BACKGROUND_REPLICATION_ENABLED` (`--background-replication-enabled`): Enable background replication (default: `true`)
+- `DOVEWARDEN_BACKGROUND_REPLICATION_INTERVAL` (`--background-replication-interval`): Background replication interval (default: `1h`)
+- `DOVEWARDEN_BACKGROUND_REPLICATION_THRESHOLD` (`--background-replication-threshold`): Skip users replicated within this time (default: `24h`)
+
+### Background Replication
+
+Background replication periodically lists all users from the Doveadm API and enqueues them for replication if they haven't been replicated within the configured threshold. This ensures that users who haven't triggered any IMAP events are still regularly replicated.
+
+The background replication service:
+- Runs once immediately on startup
+- Then runs periodically based on the configured interval (default: 1 hour)
+- Tracks the last replication time for each user in Redis
+- Skips users who were replicated within the threshold period (default: 24 hours)
+- Can be disabled by setting `DOVEWARDEN_BACKGROUND_REPLICATION_ENABLED=false`
 
 ## API Endpoints
 

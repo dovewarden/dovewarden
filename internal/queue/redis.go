@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -163,5 +164,47 @@ func (q *InMemoryQueue) SetReplicationState(ctx context.Context, username string
 		return fmt.Errorf("failed to set replication state: %w", err)
 	}
 	q.logger.Debug("stored replication state", "username", username, "key", key, "state", state, "ttl", ttl)
+	return nil
+}
+
+// GetLastReplicationTime retrieves the timestamp of the last replication for a user.
+// Returns zero time if no replication has been performed.
+func (q *InMemoryQueue) GetLastReplicationTime(ctx context.Context, username string) (time.Time, error) {
+	key := fmt.Sprintf("%s:last_replication:%s", q.ns, username)
+	timestampStr, err := q.client.Get(ctx, key).Result()
+	if err == redis.Nil {
+		// No timestamp stored yet
+		q.logger.Debug("last replication time not found", "username", username, "key", key)
+		return time.Time{}, nil
+	}
+	if err != nil {
+		q.logger.Debug("failed to get last replication time", "username", username, "key", key, "error", err)
+		return time.Time{}, fmt.Errorf("failed to get last replication time: %w", err)
+	}
+
+	// Parse Unix timestamp
+	timestamp, err := strconv.ParseInt(timestampStr, 10, 64)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse timestamp: %w", err)
+	}
+
+	t := time.Unix(timestamp, 0)
+	q.logger.Debug("retrieved last replication time", "username", username, "key", key, "time", t)
+	return t, nil
+}
+
+// SetLastReplicationTime stores the timestamp of the last replication for a user.
+// The timestamp expires after 30 days to prevent unbounded Redis memory growth.
+func (q *InMemoryQueue) SetLastReplicationTime(ctx context.Context, username string, t time.Time) error {
+	key := fmt.Sprintf("%s:last_replication:%s", q.ns, username)
+	// Store as Unix timestamp
+	timestampStr := strconv.FormatInt(t.Unix(), 10)
+	// Set TTL to 30 days - timestamps older than this are considered stale
+	ttl := 30 * 24 * time.Hour
+	if err := q.client.Set(ctx, key, timestampStr, ttl).Err(); err != nil {
+		q.logger.Debug("failed to set last replication time", "username", username, "key", key, "time", t, "error", err)
+		return fmt.Errorf("failed to set last replication time: %w", err)
+	}
+	q.logger.Debug("stored last replication time", "username", username, "key", key, "time", t, "ttl", ttl)
 	return nil
 }

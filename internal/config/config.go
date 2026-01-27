@@ -4,35 +4,42 @@ import (
 	"flag"
 	"os"
 	"strconv"
+	"time"
 )
 
 // Config holds application configuration.
 type Config struct {
-	HTTPAddr        string
-	MetricsAddr     string
-	RedisMode       string // "inmemory" or "external"
-	RedisAddr       string
-	Namespace       string
-	NumWorkers      int
-	DoveadmURL      string
-	DoveadmPassword string
-	DoveadmDest     string // destination for dsync (e.g., "imap")
-	LogLevel        string
+	HTTPAddr                       string
+	MetricsAddr                    string
+	RedisMode                      string // "inmemory" or "external"
+	RedisAddr                      string
+	Namespace                      string
+	NumWorkers                     int
+	DoveadmURL                     string
+	DoveadmPassword                string
+	DoveadmDest                    string // destination for dsync (e.g., "imap")
+	LogLevel                       string
+	BackgroundReplicationEnabled   bool
+	BackgroundReplicationInterval  time.Duration
+	BackgroundReplicationThreshold time.Duration
 }
 
 // Load reads configuration from environment and command-line flags.
 func Load() *Config {
 	cfg := &Config{
-		HTTPAddr:        ":8080",
-		MetricsAddr:     ":9090",
-		RedisMode:       "inmemory",
-		RedisAddr:       "localhost:6379",
-		Namespace:       "dovewarden",
-		NumWorkers:      4,
-		DoveadmURL:      "http://localhost:8080",
-		DoveadmPassword: "",
-		DoveadmDest:     "imap",
-		LogLevel:        "info",
+		HTTPAddr:                       ":8080",
+		MetricsAddr:                    ":9090",
+		RedisMode:                      "inmemory",
+		RedisAddr:                      "localhost:6379",
+		Namespace:                      "dovewarden",
+		NumWorkers:                     4,
+		DoveadmURL:                     "http://localhost:8080",
+		DoveadmPassword:                "",
+		DoveadmDest:                    "imap",
+		LogLevel:                       "info",
+		BackgroundReplicationEnabled:   true,
+		BackgroundReplicationInterval:  time.Hour,
+		BackgroundReplicationThreshold: 24 * time.Hour,
 	}
 
 	flag.StringVar(&cfg.HTTPAddr, "http-addr", envOrDefault("DOVEWARDEN_HTTP_ADDR", cfg.HTTPAddr), "HTTP server listen address for events")
@@ -51,6 +58,23 @@ func Load() *Config {
 		cfg.NumWorkers = nw
 	}
 	flag.IntVar(&cfg.NumWorkers, "num-workers", cfg.NumWorkers, "Number of worker goroutines for dequeuing")
+
+	// Parse background replication settings
+	backgroundReplicationEnabledStr := envOrDefault("DOVEWARDEN_BACKGROUND_REPLICATION_ENABLED", "true")
+	cfg.BackgroundReplicationEnabled = backgroundReplicationEnabledStr == "true" || backgroundReplicationEnabledStr == "1"
+	flag.BoolVar(&cfg.BackgroundReplicationEnabled, "background-replication-enabled", cfg.BackgroundReplicationEnabled, "Enable background replication")
+
+	backgroundReplicationIntervalStr := envOrDefault("DOVEWARDEN_BACKGROUND_REPLICATION_INTERVAL", "1h")
+	if interval, err := time.ParseDuration(backgroundReplicationIntervalStr); err == nil && interval > 0 {
+		cfg.BackgroundReplicationInterval = interval
+	}
+	flag.DurationVar(&cfg.BackgroundReplicationInterval, "background-replication-interval", cfg.BackgroundReplicationInterval, "Background replication interval")
+
+	backgroundReplicationThresholdStr := envOrDefault("DOVEWARDEN_BACKGROUND_REPLICATION_THRESHOLD", "24h")
+	if threshold, err := time.ParseDuration(backgroundReplicationThresholdStr); err == nil && threshold > 0 {
+		cfg.BackgroundReplicationThreshold = threshold
+	}
+	flag.DurationVar(&cfg.BackgroundReplicationThreshold, "background-replication-threshold", cfg.BackgroundReplicationThreshold, "Background replication threshold - users replicated within this time are skipped")
 
 	flag.Parse()
 
