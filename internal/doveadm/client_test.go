@@ -199,9 +199,6 @@ func TestSyncWithState(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	if resp == nil {
-		t.Fatal("expected non-nil response")
-	}
 	if resp.State != "new-state-456" {
 		t.Errorf("expected state 'new-state-456', got %s", resp.State)
 	}
@@ -225,9 +222,9 @@ func TestSyncWithoutState(t *testing.T) {
 			t.Fatal("expected map for params")
 		}
 
-		// Verify state is NOT present
-		if _, exists := params["state"]; exists {
-			t.Error("state should not be present when empty string is provided")
+		// Verify state is present anyway
+		if _, exists := params["state"]; !exists {
+			t.Error("state parameter missing, expected new state anyway")
 		}
 
 		w.WriteHeader(http.StatusOK)
@@ -241,9 +238,6 @@ func TestSyncWithoutState(t *testing.T) {
 	resp, err := client.Sync(ctx, "test-user", "imap", "")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
-	}
-	if resp == nil {
-		t.Fatal("expected non-nil response")
 	}
 	if resp.State != "" {
 		t.Errorf("expected empty state, got %s", resp.State)

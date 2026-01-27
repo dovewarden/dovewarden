@@ -89,12 +89,9 @@ func (c *Client) Sync(ctx context.Context, username string, destination string, 
 	// [["sync",{"destination":["$destination"],"user":"$username","state":"$state"},"tag1"]]
 	params := map[string]interface{}{
 		"destination": []string{destination},
-		"user":        username,
-	}
-
-	// Add state parameter if provided
-	if state != "" {
-		params["state"] = state
+		// adding an empty string/invalid state will cause a full sync, but still return a new state
+		"state": state,
+		"user":  username,
 	}
 
 	payload := []interface{}{
