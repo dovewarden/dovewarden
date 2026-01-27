@@ -61,6 +61,14 @@ spec:
               value: "{{ .Values.config.namespace }}"
             - name: DOVEWARDEN_NUM_WORKERS
               value: "{{ .Values.config.numWorkers | toString }}"
+            - name: DOVEWARDEN_LOG_LEVEL
+              value: "{{ .Values.config.logLevel }}"
+            - name: DOVEWARDEN_BACKGROUND_REPLICATION_ENABLED
+              value: "{{ .Values.config.backgroundReplication.enabled | toString }}"
+            - name: DOVEWARDEN_BACKGROUND_REPLICATION_INTERVAL
+              value: "{{ .Values.config.backgroundReplication.interval }}"
+            - name: DOVEWARDEN_BACKGROUND_REPLICATION_THRESHOLD
+              value: "{{ .Values.config.backgroundReplication.threshold }}"
             - name: DOVEWARDEN_DOVEADM_URL
               value: "{{ .Values.config.doveadm.url }}"
             {{- if .Values.config.doveadm.password }}
