@@ -150,7 +150,7 @@ func TestSyncPayloadFormat(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		_, _ = fmt.Fprintf(w, `[["sync",{"status":"ok"},"dovewarden-sync"]]`)
+		_, _ = fmt.Fprintf(w, `[["doveadmResponse",[{"state":"DOVEADM-DUMMY-STATE"}],"dovewarden-sync"]]`)
 	}))
 	defer server.Close()
 
@@ -188,7 +188,7 @@ func TestSyncWithState(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		_, _ = fmt.Fprintf(w, `[["sync",{"state":"new-state-456"},"dovewarden-sync"]]`)
+		_, _ = fmt.Fprintf(w, `[["doveadmResponse",[{"state":"new-state-456"}],"dovewarden-sync"]]`)
 	}))
 	defer server.Close()
 

@@ -39,10 +39,11 @@ type SyncResponse struct {
 
 // responseEntry models a single Doveadm response array.
 type responseEntry struct {
-	Status   string
-	Error    *ResponseError
-	Response map[string]interface{}
-	Tag      string
+	Status       string
+	Error        *ResponseError
+	Response     map[string]interface{}
+	ResponseList []map[string]interface{}
+	Tag          string
 }
 
 func (r *responseEntry) UnmarshalJSON(data []byte) error {
@@ -67,10 +68,16 @@ func (r *responseEntry) UnmarshalJSON(data []byte) error {
 		}
 		r.Error = &errPayload
 	} else {
-		// Parse as response object for successful responses
+		// Parse as response object for successful responses. Dovecot may return
+		// either a single map or an array of maps as the second element.
 		var respObj map[string]interface{}
-		if err := json.Unmarshal(raw[1], &respObj); err == nil {
+		if err := json.Unmarshal(raw[1], &respObj); err == nil && len(respObj) > 0 {
 			r.Response = respObj
+		} else {
+			var respArr []map[string]interface{}
+			if err := json.Unmarshal(raw[1], &respArr); err == nil {
+				r.ResponseList = respArr
+			}
 		}
 	}
 
@@ -152,6 +159,11 @@ func (c *Client) Sync(ctx context.Context, username string, destination string, 
 		// Extract state from response if available
 		if entry.Response != nil {
 			if stateVal, ok := entry.Response["state"].(string); ok {
+				syncResp.State = stateVal
+			}
+		}
+		if len(entry.ResponseList) > 0 {
+			if stateVal, ok := entry.ResponseList[0]["state"].(string); ok {
 				syncResp.State = stateVal
 			}
 		}
