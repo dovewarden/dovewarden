@@ -45,6 +45,7 @@ services:
     volumes:
       - ./hack/dovecot-a.conf:/etc/dovecot/conf.d/dovecot-a.conf:ro
       - ./hack/dovecot-shared.conf:/etc/dovecot/conf.d/dovecot-shared.conf:ro
+      - ./hack/passwd-file:/etc/dovecot/passwd-file:ro
 
   dovecot-b:
     image: dovecot/dovecot:2.4.2-dev
@@ -69,6 +70,7 @@ services:
     volumes:
       - ./hack/dovecot-b.conf:/etc/dovecot/conf.d/dovecot-b.conf:ro
       - ./hack/dovecot-shared.conf:/etc/dovecot/conf.d/dovecot-shared.conf:ro
+      - ./hack/passwd-file:/etc/dovecot/passwd-file:ro
 
   dovewarden:
     image: ghcr.io/dovewarden/dovewarden:latest
