@@ -112,6 +112,14 @@ config:
   # Log level: debug, info, warn or error
   logLevel: "info"
 
+  # Background replication configuration
+  backgroundReplication:
+    enabled: true
+    # How often to run background replication checks
+    interval: "1h"
+    # Skip users that were replicated within this threshold
+    threshold: "24h"
+
   # Doveadm configuration
   doveadm:
     url: "http://doveadm:8080"
