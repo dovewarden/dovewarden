@@ -41,7 +41,7 @@ func TestLastReplicationTime(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error getting time: %v", err)
 	}
-	
+
 	// Unix timestamps lose sub-second precision
 	if retrieved.Unix() != now.Unix() {
 		t.Errorf("expected time %v, got %v", now.Unix(), retrieved.Unix())
@@ -79,7 +79,7 @@ func TestLastReplicationTimeUpdate(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error getting time: %v", err)
 	}
-	
+
 	if retrieved.Unix() != time2.Unix() {
 		t.Errorf("expected time %v, got %v", time2.Unix(), retrieved.Unix())
 	}
@@ -97,11 +97,11 @@ func TestLastReplicationTimeMultipleUsers(t *testing.T) {
 	}()
 
 	ctx := context.Background()
-	
+
 	// Set different times for different users
 	time1 := time.Now().Add(-2 * time.Hour)
 	time2 := time.Now().Add(-1 * time.Hour)
-	
+
 	if err := q.SetLastReplicationTime(ctx, "user-a", time1); err != nil {
 		t.Errorf("unexpected error setting time for user-a: %v", err)
 	}
