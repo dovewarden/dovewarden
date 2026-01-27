@@ -32,7 +32,8 @@ func TestListUsersSuccess(t *testing.T) {
 		// Send success response with user list
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = fmt.Fprintf(w, `[["user",[{"username":"user-a","uid":"1000","gid":"1000","home":"/home/user-a"},{"username":"user-b","uid":"1001","gid":"1001","home":"/home/user-b"}],"dovewarden-list-users"]]`)
+		_, _ = fmt.Fprintf(w, `[["doveadmResponse",{"userList":["user-a","user-b","user-c"]},"dovewarden-list-users"]]`)
+
 	}))
 	defer server.Close()
 
@@ -44,14 +45,17 @@ func TestListUsersSuccess(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	if len(users) != 2 {
-		t.Errorf("expected 2 users, got %d", len(users))
+	if len(users) != 3 {
+		t.Errorf("expected 3 users, got %d", len(users))
 	}
 	if users[0].Username != "user-a" {
 		t.Errorf("expected first user to be 'user-a', got %s", users[0].Username)
 	}
 	if users[1].Username != "user-b" {
 		t.Errorf("expected second user to be 'user-b', got %s", users[1].Username)
+	}
+	if users[2].Username != "user-c" {
+		t.Errorf("expected third user to be 'user-c', got %s", users[2].Username)
 	}
 }
 
@@ -77,7 +81,7 @@ func TestListUsersEmpty(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = fmt.Fprintf(w, `[["user",[],"dovewarden-list-users"]]`)
+		_, _ = fmt.Fprintf(w, `[["doveadmResponse",{"userList":[]},"dovewarden-list-users"]]`)
 	}))
 	defer server.Close()
 

@@ -244,23 +244,16 @@ func (c *Client) ListUsers(ctx context.Context) ([]User, error) {
 		}
 
 		// Extract users from response
-		if len(entry.ResponseList) > 0 {
-			for _, userMap := range entry.ResponseList {
-				user := User{}
-				if username, ok := userMap["username"].(string); ok {
-					user.Username = username
-				}
-				if uid, ok := userMap["uid"].(string); ok {
-					user.UID = uid
-				}
-				if gid, ok := userMap["gid"].(string); ok {
-					user.GID = gid
-				}
-				if home, ok := userMap["home"].(string); ok {
-					user.Home = home
-				}
-				if user.Username != "" {
-					users = append(users, user)
+		// Response contains {"userList": ["user1", "user2", ...]}
+		if entry.Response != nil {
+			if userList, ok := entry.Response["userList"].([]interface{}); ok {
+				for _, item := range userList {
+					if username, ok := item.(string); ok {
+						user := User{
+							Username: username,
+						}
+						users = append(users, user)
+					}
 				}
 			}
 		}
