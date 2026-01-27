@@ -61,6 +61,8 @@ spec:
               value: "{{ .Values.config.namespace }}"
             - name: DOVEWARDEN_NUM_WORKERS
               value: "{{ .Values.config.numWorkers | toString }}"
+            - name: DOVEWARDEN_LOG_LEVEL
+              value: "{{ .Values.config.logLevel }}"
             - name: DOVEWARDEN_DOVEADM_URL
               value: "{{ .Values.config.doveadm.url }}"
             {{- if .Values.config.doveadm.password }}

@@ -17,6 +17,7 @@ type Config struct {
 	DoveadmURL      string
 	DoveadmPassword string
 	DoveadmDest     string // destination for dsync (e.g., "imap")
+	LogLevel        string
 }
 
 // Load reads configuration from environment and command-line flags.
@@ -31,6 +32,7 @@ func Load() *Config {
 		DoveadmURL:      "http://localhost:8080",
 		DoveadmPassword: "",
 		DoveadmDest:     "imap",
+		LogLevel:        "info",
 	}
 
 	flag.StringVar(&cfg.HTTPAddr, "http-addr", envOrDefault("DOVEWARDEN_HTTP_ADDR", cfg.HTTPAddr), "HTTP server listen address for events")
@@ -41,6 +43,7 @@ func Load() *Config {
 	flag.StringVar(&cfg.DoveadmURL, "doveadm-url", envOrDefault("DOVEWARDEN_DOVEADM_URL", cfg.DoveadmURL), "Doveadm API base URL")
 	flag.StringVar(&cfg.DoveadmPassword, "doveadm-password", envOrDefault("DOVEWARDEN_DOVEADM_PASSWORD", cfg.DoveadmPassword), "Doveadm API password")
 	flag.StringVar(&cfg.DoveadmDest, "doveadm-dest", envOrDefault("DOVEWARDEN_DOVEADM_DEST", cfg.DoveadmDest), "Doveadm dsync destination")
+	flag.StringVar(&cfg.LogLevel, "log-level", envOrDefault("DOVEWARDEN_LOG_LEVEL", cfg.LogLevel), "Log level: debug, info, warn, error")
 
 	// Parse NumWorkers from environment or flag
 	numWorkersStr := envOrDefault("DOVEWARDEN_NUM_WORKERS", "4")

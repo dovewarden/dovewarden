@@ -109,6 +109,9 @@ config:
   # Each worker will run one sync job in parallel
   numWorkers: 4
 
+  # Log level: debug, info, warn or error
+  logLevel: "info"
+
   # Doveadm configuration
   doveadm:
     url: "http://doveadm:8080"

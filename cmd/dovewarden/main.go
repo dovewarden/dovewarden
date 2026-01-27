@@ -37,14 +37,19 @@ func main() {
 		fmt.Printf("dovewarden version %s\n", version)
 		os.Exit(0)
 	}
+
+	// Load configuration early so we can configure logging
+	cfg := config.Load()
+
 	// Initialize structured logging
 	// LOG_FORMAT environment variable controls output: "json" or "text" (default)
 	logFormat := strings.ToLower(os.Getenv("LOG_FORMAT"))
 	var logger *slog.Logger
 
+	lvl := parseLogLevel(cfg.LogLevel)
 	opts := &slog.HandlerOptions{
 		AddSource: true,
-		Level:     slog.LevelInfo,
+		Level:     lvl,
 	}
 
 	if logFormat == "json" {
@@ -58,10 +63,8 @@ func main() {
 	slog.SetDefault(logger)
 
 	// Log version information
-	slog.Info("dovewarden starting", "version", version)
+	slog.Info("dovewarden starting", "version", version, "log_level", lvl.String())
 
-	// Load configuration
-	cfg := config.Load()
 	slog.Info("Starting dovewarden",
 		"http_addr", cfg.HTTPAddr,
 		"metrics_addr", cfg.MetricsAddr,
@@ -194,5 +197,22 @@ func main() {
 	select {
 	case <-done:
 	case <-time.After(2 * time.Second):
+	}
+}
+
+// parseLogLevel converts a string log level to slog.Level, defaulting to info on unknown values.
+func parseLogLevel(lvl string) slog.Level {
+	switch strings.ToLower(lvl) {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn", "warning":
+		return slog.LevelWarn
+	case "error", "err":
+		return slog.LevelError
+	default:
+		fmt.Fprintf(os.Stderr, "unknown log level %q, defaulting to info\n", lvl)
+		return slog.LevelInfo
 	}
 }
