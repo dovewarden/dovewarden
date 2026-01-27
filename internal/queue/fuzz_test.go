@@ -45,7 +45,7 @@ func FuzzQueueDequeue(f *testing.F) {
 		rnd := rand.New(rand.NewSource(seed))
 
 		logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
-		q, err := NewInMemoryQueue("fuzzns", "")
+		q, err := NewInMemoryQueue("fuzzns", "", logger)
 		if err != nil {
 			t.Fatalf("failed to create queue: %v", err)
 		}

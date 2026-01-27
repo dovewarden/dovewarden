@@ -13,7 +13,7 @@ import (
 // TestWorkerPoolDequeue verifies that workers dequeue events from the queue.
 func TestWorkerPoolDequeue(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	q, err := NewInMemoryQueue("test", "")
+	q, err := NewInMemoryQueue("test", "", logger)
 	if err != nil {
 		t.Fatalf("failed to create queue: %v", err)
 	}
@@ -61,7 +61,7 @@ func TestWorkerPoolDequeue(t *testing.T) {
 // TestWorkerPoolRequeueOnError verifies that failed events are requeued.
 func TestWorkerPoolRequeueOnError(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	q, err := NewInMemoryQueue("test", "")
+	q, err := NewInMemoryQueue("test", "", logger)
 	if err != nil {
 		t.Fatalf("failed to create queue: %v", err)
 	}
@@ -114,7 +114,7 @@ func TestWorkerPoolRequeueOnError(t *testing.T) {
 // TestGracefulShutdown verifies that shutdown waits for active tasks.
 func TestGracefulShutdown(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	q, err := NewInMemoryQueue("test", "")
+	q, err := NewInMemoryQueue("test", "", logger)
 	if err != nil {
 		t.Fatalf("failed to create queue: %v", err)
 	}

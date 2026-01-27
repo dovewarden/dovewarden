@@ -3,6 +3,7 @@ package queue
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync/atomic"
 	"time"
 
@@ -17,6 +18,7 @@ type InMemoryQueue struct {
 	server *miniredis.Miniredis
 	client *redis.Client
 	ns     string
+	logger *slog.Logger
 
 	// operation counters
 	enqueueCount uint64
@@ -25,7 +27,7 @@ type InMemoryQueue struct {
 
 // NewInMemoryQueue creates a new in-memory Redis queue.
 // addr parameter allows specifying the address for miniredis (for testing).
-func NewInMemoryQueue(namespace string, addr string) (*InMemoryQueue, error) {
+func NewInMemoryQueue(namespace string, addr string, logger *slog.Logger) (*InMemoryQueue, error) {
 	s := miniredis.NewMiniRedis()
 	if addr != "" {
 		if err := s.StartAddr(addr); err != nil {
@@ -53,6 +55,7 @@ func NewInMemoryQueue(namespace string, addr string) (*InMemoryQueue, error) {
 		server: s,
 		client: client,
 		ns:     namespace,
+		logger: logger,
 	}, nil
 }
 
@@ -137,11 +140,14 @@ func (q *InMemoryQueue) GetReplicationState(ctx context.Context, username string
 	state, err := q.client.Get(ctx, key).Result()
 	if err == redis.Nil {
 		// No state stored yet
+		q.logger.Debug("replication state not found", "username", username, "key", key)
 		return "", nil
 	}
 	if err != nil {
+		q.logger.Debug("failed to get replication state", "username", username, "key", key, "error", err)
 		return "", fmt.Errorf("failed to get replication state: %w", err)
 	}
+	q.logger.Debug("retrieved replication state", "username", username, "key", key, "state", state)
 	return state, nil
 }
 
@@ -153,7 +159,9 @@ func (q *InMemoryQueue) SetReplicationState(ctx context.Context, username string
 	// Set TTL to 30 days - states older than this are considered stale
 	ttl := 30 * 24 * time.Hour
 	if err := q.client.Set(ctx, key, state, ttl).Err(); err != nil {
+		q.logger.Debug("failed to set replication state", "username", username, "key", key, "state", state, "error", err)
 		return fmt.Errorf("failed to set replication state: %w", err)
 	}
+	q.logger.Debug("stored replication state", "username", username, "key", key, "state", state, "ttl", ttl)
 	return nil
 }

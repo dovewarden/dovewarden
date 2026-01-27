@@ -34,11 +34,7 @@ func (h *DoveadmEventHandler) Handle(ctx context.Context, username string) error
 		state = ""
 	}
 
-	if state != "" {
-		h.logger.Info("Syncing user via dsync with state", "username", username, "destination", h.destination, "has_state", true)
-	} else {
-		h.logger.Info("Syncing user via dsync", "username", username, "destination", h.destination, "has_state", false)
-	}
+	h.logger.Info("Syncing user via dsync", "username", username, "destination", h.destination, "has_state", state != "")
 
 	resp, err := h.client.Sync(ctx, username, h.destination, state)
 	if err != nil {

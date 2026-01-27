@@ -2,11 +2,18 @@ package queue
 
 import (
 	"context"
+	"log/slog"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
+
+// testLogger creates a logger for testing with error level to reduce noise
+func testLogger() *slog.Logger {
+	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
+}
 
 // helper to fetch sorted set members with scores, ascending by score
 func getQueueOrder(t *testing.T, q *InMemoryQueue) []string {
@@ -22,7 +29,7 @@ func getQueueOrder(t *testing.T, q *InMemoryQueue) []string {
 }
 
 func TestPriorityOrderByInsertion(t *testing.T) {
-	q, err := NewInMemoryQueue("testns", "")
+	q, err := NewInMemoryQueue("testns", "", testLogger())
 	if err != nil {
 		t.Fatalf("failed to create queue: %v", err)
 	}
@@ -54,7 +61,7 @@ func TestPriorityOrderByInsertion(t *testing.T) {
 }
 
 func TestPriorityFactorGreaterThanOne(t *testing.T) {
-	q, err := NewInMemoryQueue("testns2", "")
+	q, err := NewInMemoryQueue("testns2", "", testLogger())
 	if err != nil {
 		t.Fatalf("failed to create queue: %v", err)
 	}
@@ -86,7 +93,7 @@ func TestPriorityFactorGreaterThanOne(t *testing.T) {
 }
 
 func TestPriorityFactorLessThanOne(t *testing.T) {
-	q, err := NewInMemoryQueue("testns3", "")
+	q, err := NewInMemoryQueue("testns3", "", testLogger())
 	if err != nil {
 		t.Fatalf("failed to create queue: %v", err)
 	}
@@ -118,7 +125,7 @@ func TestPriorityFactorLessThanOne(t *testing.T) {
 }
 
 func TestDequeueEmptyQueue(t *testing.T) {
-	q, err := NewInMemoryQueue("testns_dequeue_empty", "")
+	q, err := NewInMemoryQueue("testns_dequeue_empty", "", testLogger())
 	if err != nil {
 		t.Fatalf("failed to create queue: %v", err)
 	}
@@ -140,7 +147,7 @@ func TestDequeueEmptyQueue(t *testing.T) {
 }
 
 func TestDequeueRetryBehavior(t *testing.T) {
-	q, err := NewInMemoryQueue("testns_dequeue_retry", "")
+	q, err := NewInMemoryQueue("testns_dequeue_retry", "", testLogger())
 	if err != nil {
 		t.Fatalf("failed to create queue: %v", err)
 	}
@@ -165,7 +172,7 @@ func TestDequeueRetryBehavior(t *testing.T) {
 }
 
 func TestDequeueGracefulErrorOnMalformedData(t *testing.T) {
-	q, err := NewInMemoryQueue("testns_dequeue_malformed", "")
+	q, err := NewInMemoryQueue("testns_dequeue_malformed", "", testLogger())
 	if err != nil {
 		t.Fatalf("failed to create queue: %v", err)
 	}
@@ -203,7 +210,7 @@ func TestDequeueGracefulErrorOnMalformedData(t *testing.T) {
 }
 
 func TestDequeueWithEnqueuedData(t *testing.T) {
-	q, err := NewInMemoryQueue("testns_dequeue_with_data", "")
+	q, err := NewInMemoryQueue("testns_dequeue_with_data", "", testLogger())
 	if err != nil {
 		t.Fatalf("failed to create queue: %v", err)
 	}
@@ -252,7 +259,7 @@ func TestDequeueWithEnqueuedData(t *testing.T) {
 }
 
 func TestDequeueStatsIncrement(t *testing.T) {
-	q, err := NewInMemoryQueue("testns_dequeue_stats", "")
+	q, err := NewInMemoryQueue("testns_dequeue_stats", "", testLogger())
 	if err != nil {
 		t.Fatalf("failed to create queue: %v", err)
 	}
@@ -310,7 +317,7 @@ func TestDequeueStatsIncrement(t *testing.T) {
 
 // TestReplicationState verifies state storage and retrieval
 func TestReplicationState(t *testing.T) {
-	q, err := NewInMemoryQueue("testns", "")
+	q, err := NewInMemoryQueue("testns", "", testLogger())
 	if err != nil {
 		t.Fatalf("failed to create queue: %v", err)
 	}
@@ -365,7 +372,7 @@ func TestReplicationState(t *testing.T) {
 
 // TestReplicationStateMultipleUsers verifies state isolation per user
 func TestReplicationStateMultipleUsers(t *testing.T) {
-	q, err := NewInMemoryQueue("testns", "")
+	q, err := NewInMemoryQueue("testns", "", testLogger())
 	if err != nil {
 		t.Fatalf("failed to create queue: %v", err)
 	}

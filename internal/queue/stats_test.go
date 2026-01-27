@@ -12,7 +12,7 @@ import (
 // TestQueueStats verifies that enqueue/dequeue operations are counted correctly
 func TestQueueStats(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
-	q, err := NewInMemoryQueue("teststats", "")
+	q, err := NewInMemoryQueue("teststats", "", logger)
 	if err != nil {
 		t.Fatalf("failed to create queue: %v", err)
 	}
