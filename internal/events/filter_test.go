@@ -34,6 +34,7 @@ func TestFilterWithFixtures(t *testing.T) {
 			}
 			if result == nil {
 				t.Fatal("Filter() returned nil for event that should pass")
+				return // t.Fatal stops execution, but make linter happy
 			}
 			if result.Username == "" {
 				t.Fatal("expected non-empty username")
