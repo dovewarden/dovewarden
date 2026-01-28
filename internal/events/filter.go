@@ -15,11 +15,12 @@ var (
 
 // AcceptedEvents is the list of event types that pass the filter.
 var AcceptedEvents = map[string]bool{
-	"imap_command_finished": true,
+	"imap_command_finished":  true,
+	"mail_delivery_finished": true,
 }
 
-// AcceptedCmdNames is the list of IMAP commands that should be queued.
-var AcceptedCmdNames = map[string]bool{
+// AcceptedIMAPCmdNames is the list of IMAP commands that should be queued.
+var AcceptedIMAPCmdNames = map[string]bool{
 	"APPEND":       true,
 	"AUTHENTICATE": false,
 	"CAPABILITY":   false,
@@ -86,7 +87,7 @@ func Filter(data []byte) (*FilteredEvent, error) {
 		return nil, ErrEmptyUsername
 	}
 
-	if !AcceptedCmdNames[strings.ToUpper(evt.Fields.CmdName)] {
+	if evt.Event == "imap_command_finished" && !AcceptedIMAPCmdNames[strings.ToUpper(evt.Fields.CmdName)] {
 		return nil, ErrInvalidCmdName
 	}
 

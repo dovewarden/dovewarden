@@ -207,6 +207,8 @@ tasks:
         var: imap_commands
         split: "\n"
       task: integration:imap:cmd:{{.ITEM}}
+    - task: integration:lmtp
+    - task: integration:lda
 
   integration:dependencies:
     desc: Set up dependencies for integration tests
@@ -257,3 +259,58 @@ tasks:
     - sleep 2
     # check if user was created to see if sync was executed (doveadm mailbox list would already create the user)
     - docker compose exec dovecot-b test -d /srv/vmail/{{.imap_command}} || (echo "User {{.imap_command}} was not created on dovecot-b, sync did not happen" >&2 && exit 1)
+
+  integration:lmtp:
+    desc: Run LMTP integration test
+    deps:
+    - task: integration:dependencies
+    cmds:
+    - echo "Running LMTP integration test"
+    # purge all mailboxes of the user from both dovecots
+    - docker compose exec dovecot-a rm -rf /srv/vmail/lmtp
+    - docker compose exec dovecot-b rm -rf /srv/vmail/lmtp
+    # TODO check metrics and wait until queue is empty instead of sleeping -- we don't want to have the delete command replicated while already running imaptest
+    - sleep 2
+    # deliver a mail through lmtp, wait between lines (`-i1`) to give dovecot time to respond and not send before dovecot actually replied
+    - |
+        docker compose exec dovecot-test sh -c 'nc -i1 -q1 -C dovecot-a 30024 <<EOT
+        LHLO e2e-test
+        MAIL FROM:<e2e@example.org>
+        RCPT TO:<lmtp>
+        DATA
+        Subject: testmail
+        
+        message
+        .
+        
+        QUIT
+        EOT
+        '
+    # TODO check metrics and wait until queue is empty instead of sleeping
+    - sleep 2
+    # check if user was created to see if sync was executed (doveadm mailbox list would already create the user)
+    - docker compose exec dovecot-b test -d /srv/vmail/lmtp || (echo "User lmtp was not created on dovecot-b, sync did not happen" >&2 && exit 1)
+
+  integration:lda:
+    desc: Run LMTP integration test
+    deps:
+    - task: integration:dependencies
+    cmds:
+    - echo "Running lda integration test"
+    # purge all mailboxes of the user from both dovecots
+    - docker compose exec dovecot-a rm -rf /srv/vmail/lda
+    - docker compose exec dovecot-b rm -rf /srv/vmail/lda
+    # TODO check metrics and wait until queue is empty instead of sleeping -- we don't want to have the delete command replicated while already running imaptest
+    - sleep 2
+    # lda a mail through lda, wait between lines (`-i1`) to give dovecot time to respond and not send before dovecot actually replied
+    - |
+      docker compose exec dovecot-a sh -c 'echo <<EOT | /dovecot/libexec/dovecot/dovecot-lda -f lda -d lda -a lda
+      Subject: testmail
+      
+      message
+      EOT
+      '
+    # TODO check metrics and wait until queue is empty instead of sleeping
+    - sleep 2
+    # check if user was created to see if sync was executed (doveadm mailbox list would already create the user)
+    - docker compose exec dovecot-b test -d /srv/vmail/lda || (echo "User lda was not created on dovecot-b, sync did not happen" >&2 && exit 1)
