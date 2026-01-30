@@ -1,46 +1,22 @@
 # dovewarden
 
-A lightweight event processor for Dovecot's event API. Receives IMAP command events, filters them, and enqueues them in a priority queue for asynchronous processing.
+A Dovecot replication controller, bringing back replication to Dovecot 2.4+ servers.
+
+![Dovewarden Logo](docs/images/dovewarden.png)
+
+dovewarden listens for Dovecot events that indicate a changed mailbox, and then runs doveadm sync commands to replicate the changes to another Dovecot server. It does not require any changes to the Dovecot packages.
 
 ## Features
 
-- **HTTP Event Receiver**: Accepts JSON events from Dovecot's event API
-- **Event Filtering**: Passes only `imap_command_finished` events
-- **Priority Queue**: Events stored in a Redis-compatible sorted set per username
-- **Background Replication**: Periodic replication of all users to cover missed events
-- **In-Memory Development Mode**: Uses miniredis for zero-dependency local development
-- **Prometheus Metrics**: Full instrumentation for monitoring
-- **Separate ports for events and metrics**
-- **Health/Readiness Probes**: `/healthz` and `/readyz` on the metrics port
-- **Graceful Shutdown**: Drains HTTP servers with timeouts
-
-## Architecture
-
-### Event Flow
-
-```
-Dovecot Event API
-       ↓
-   POST /events  (default :8080)
-       ↓
-   Filter (imap_command_finished only)
-       ↓
-   Priority Queue (Redis sorted set per username)
-       ↓
-   Metrics update (scraped from :9090/metrics)
-```
-
-### Components
-
-- **Config** (`internal/config`): Configuration from environment variables or CLI flags
-- **Events** (`internal/events`): Event parsing and filtering logic
-- **Queue** (`internal/queue`): Redis-compatible queue abstraction with miniredis backend
-- **Metrics** (`internal/metrics`): Prometheus instrumentation
-- **Server** (`internal/server`): HTTP endpoint for events
+- small footprint, easy to deploy Golang application
+- relies on standard Dovecot Event API and Doveadm API
+- batteries included but swappable queue: in-memory (miniredis) or external Redis for scale-out and high availability
+- comprehensive Prometheus metrics for monitoring
+- high test coverage and E2E tests with real Dovecot servers
 
 ## Configuration
 
-Environment variables (with CLI flag overrides):
+Configuration is possible using either environment variables or CLI flags.
 
 - `DOVEWARDEN_HTTP_ADDR` (`--http-addr`): HTTP server listen address for events (default: `:8080`)
 - `DOVEWARDEN_METRICS_ADDR` (`--metrics-addr`): HTTP server listen address for Prometheus metrics (default: `:9090`)
@@ -85,62 +61,48 @@ The background replication service:
     - Returns `503` if the queue backend health check fails
     - Returns `200 OK` when ready and healthy
 
-## Dovecot Event Payload
+## Dovecot Configuration
 
-Events must be sent as JSON POST requests to `/events`:
+To enable event exporting in Dovecot, add the following configuration to your `dovecot.conf` or a separate included configuration file:
 
-```json
-{
-  "event": "imap_command_finished",
-  "username": "user@example.com",
-  "timestamp": "2024-12-20T10:30:45Z"
+```
+# forward sync-related events
+event_exporter dovewarden {
+  driver = http-post
+  http_post_url = http://dovewarden:8080/events
+
+  format = json
+  time_format = rfc3339
+}
+
+metric dovewarden {
+  exporter = dovewarden
+  filter = event=imap_command_finished AND tagged_reply_state=OK AND category=service:imap AND ( \
+    cmd_name="APPEND" or \
+    cmd_name="COPY" or \
+    cmd_name="CLOSE" or \
+    cmd_name="CREATE" or \
+    cmd_name="DELETE" or \
+    cmd_name="EXPUNGE" or \
+    cmd_name="MOVE" or \
+    cmd_name="RENAME" or \
+    cmd_name="STORE" or \
+    cmd_name="UID COPY" or \
+    cmd_name="UID EXPUNGE" or \
+    cmd_name="UID MOVE" or \
+    cmd_name="UID STORE" \
+  )
 }
 ```
 
-Only events with `event: "imap_command_finished"` are accepted. The `username` field is used as the queue key.
+If installing using the helm chart, a corresponding ConfigMap is created automatically when enabling the `dovecotEventConfig.enabled` option, which can be mounted and included in your Dovecot configuration.
 
-## Prometheus Metrics
+## Installation using helm
 
-- `dovewarden_events_received_total`: Counter of all received events
-- `dovewarden_events_filtered_total`: Counter of events passing the filter
-- `dovewarden_events_enqueued_total`: Counter of events successfully enqueued
-- `dovewarden_enqueue_errors_total`: Counter of enqueue failures
-- `dovewarden_queue_size{username="..."}`: Current queue size per username
-- `dovewarden_redis_errors_total`: Counter of Redis operation errors
-
-## Development & Local Testing
-
-### Run Locally (In-Memory Mode)
+The helm chart is available as OCI package from GitHub container registry.
 
 ```bash
-go build -o dovewarden ./cmd/dovewarden
-./dovewarden --http-addr :8080 --metrics-addr :9090
+helm install dovewarden oci://ghcr.io/dovewarden/dovewarden-chart
 ```
 
-### Test Event Submission (events port)
-
-```bash
-curl -X POST http://localhost:8080/events \
-  -H "Content-Type: application/json" \
-  -d '{"event":"imap_command_finished","username":"testuser","timestamp":"2024-12-20T10:30:45Z"}'
-```
-
-### View Metrics and Probes (metrics port)
-
-```bash
-curl http://localhost:9090/metrics
-curl -i http://localhost:9090/healthz
-curl -i http://localhost:9090/readyz
-```
-
-## Graceful Shutdown
-
-The application listens for SIGINT/SIGTERM and gracefully shuts down both the events and metrics HTTP servers with a 5-second timeout.
-
-## Future Extensions
-
-- **Priority by Event Reason**: Extend priority calculation based on event reason/command type
-- **External Redis Support**: Implement external Redis backend for production deployments
-- **Dequeue Operations**: Implement queue draining/worker logic in next phase
-- **Event Enrichment**: Add additional context to queued events (request IDs, durations, etc.)
-- **Rate Limiting**: Add rate limiting per username to prevent queue saturation
+For configuration options, see [values.yaml](helm/dovewarden/values.yaml).

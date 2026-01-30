@@ -20,9 +20,7 @@ data:
     metric {{ .Values.dovecotEventConfig.exporterName }} {
       exporter = {{ .Values.dovecotEventConfig.exporterName }}
       filter = event=*
-      # special case for DELETE commands: as imaptest also runs these for cleanup, only forward DELETE events if the mailbox
-      # is `imaptest-delete` (such that we do not trigger syncs on non-delete commands), same for append
-      filter = event=imap_command_finished AND tagged_reply_state=OK AND category=service:imap AND ( \
+      filter = event==mail_delivery_finished OR (imap_command_finished AND tagged_reply_state=OK AND category=service:imap AND ( \
         cmd_name="APPEND" or \
         cmd_name="COPY" or \
         cmd_name="CLOSE" or \
@@ -36,6 +34,6 @@ data:
         cmd_name="UID EXPUNGE" or \
         cmd_name="UID MOVE" or \
         cmd_name="UID STORE" \
-      ) {{ .Values.dovecotEventConfig.extraFilters | default "" }}
+      )) {{ .Values.dovecotEventConfig.extraFilters | default "" }}
     }
 {{- end }}
