@@ -19,8 +19,7 @@ data:
 
     metric {{ .Values.dovecotEventConfig.exporterName }} {
       exporter = {{ .Values.dovecotEventConfig.exporterName }}
-      filter = event=*
-      filter = event==mail_delivery_finished OR (imap_command_finished AND tagged_reply_state=OK AND category=service:imap AND ( \
+      filter = event=mail_delivery_finished OR (imap_command_finished AND tagged_reply_state=OK AND category=service:imap AND ( \
         cmd_name="APPEND" or \
         cmd_name="COPY" or \
         cmd_name="CLOSE" or \
