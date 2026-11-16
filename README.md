@@ -18,19 +18,19 @@ dovewarden listens for Dovecot events that indicate a changed mailbox, and then 
 
 Configuration is possible using either environment variables or CLI flags.
 
-- `DOVEWARDEN_HTTP_ADDR` (`--http-addr`): HTTP server listen address for events (default: `:8080`)
-- `DOVEWARDEN_METRICS_ADDR` (`--metrics-addr`): HTTP server listen address for Prometheus metrics (default: `:9090`)
-- `DOVEWARDEN_REDIS_MODE` (`--redis-mode`): Redis mode: `inmemory` or `external` (default: `inmemory`)
-- `DOVEWARDEN_REDIS_ADDR` (`--redis-addr`): Redis server address for external mode (default: `localhost:6379`)
-- `DOVEWARDEN_NAMESPACE` (`--namespace`): Key namespace prefix for queue keys (default: `dovewarden`)
-- `DOVEWARDEN_NUM_WORKERS` (`--num-workers`): Number of worker goroutines for dequeuing (default: `4`)
-- `DOVEWARDEN_DOVEADM_URL` (`--doveadm-url`): Doveadm API base URL (default: `http://localhost:8080`)
-- `DOVEWARDEN_DOVEADM_PASSWORD` (`--doveadm-password`): Doveadm API password (required)
-- `DOVEWARDEN_DOVEADM_DEST` (`--doveadm-dest`): Doveadm dsync destination (default: `imap`)
-- `DOVEWARDEN_LOG_LEVEL` (`--log-level`): Log level: debug, info, warn, error (default: `info`)
-- `DOVEWARDEN_BACKGROUND_REPLICATION_ENABLED` (`--background-replication-enabled`): Enable background replication (default: `true`)
-- `DOVEWARDEN_BACKGROUND_REPLICATION_INTERVAL` (`--background-replication-interval`): Background replication interval (default: `1h`)
-- `DOVEWARDEN_BACKGROUND_REPLICATION_THRESHOLD` (`--background-replication-threshold`): Skip users replicated within this time (default: `24h`)
+- `DOVEWARDEN_HTTP_ADDR` (`-http-addr`): HTTP server listen address for events (default: `:8080`)
+- `DOVEWARDEN_METRICS_ADDR` (`-metrics-addr`): HTTP server listen address for Prometheus metrics (default: `:9090`)
+- `DOVEWARDEN_REDIS_MODE` (`-redis-mode`): Redis mode: `inmemory` or `external` (default: `inmemory`)
+- `DOVEWARDEN_REDIS_ADDR` (`-redis-addr`): Redis server address for external mode (default: `localhost:6379`)
+- `DOVEWARDEN_NAMESPACE` (`-namespace`): Key namespace prefix for queue keys (default: `dovewarden`)
+- `DOVEWARDEN_NUM_WORKERS` (`-num-workers`): Number of worker goroutines for dequeuing (default: `4`)
+- `DOVEWARDEN_DOVEADM_URL` (`-doveadm-url`): Doveadm API base URL (default: `http://localhost:8080`)
+- `DOVEWARDEN_DOVEADM_PASSWORD` (`-doveadm-password`): Doveadm API password (required)
+- `DOVEWARDEN_DOVEADM_DEST` (`-doveadm-dest`): Doveadm dsync destination (default: `imap`)
+- `DOVEWARDEN_LOG_LEVEL` (`-log-level`): Log level: debug, info, warn, error (default: `info`)
+- `DOVEWARDEN_BACKGROUND_REPLICATION_ENABLED` (`-background-replication-enabled`): Enable background replication (default: `true`)
+- `DOVEWARDEN_BACKGROUND_REPLICATION_INTERVAL` (`-background-replication-interval`): Background replication interval (default: `1h`)
+- `DOVEWARDEN_BACKGROUND_REPLICATION_THRESHOLD` (`-background-replication-threshold`): Skip users replicated within this time (default: `24h`)
 
 ### Background Replication
 
