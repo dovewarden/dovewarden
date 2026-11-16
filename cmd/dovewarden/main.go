@@ -30,17 +30,16 @@ var (
 
 func init() {
 	flag.BoolVar(&showVersion, "version", false, "Show version and exit")
-	flag.Parse()
 }
 
 func main() {
+	// Load configuration early so we can configure logging (this also parses flags)
+	cfg := config.Load()
+
 	if showVersion {
 		fmt.Printf("dovewarden version %s\n", version)
 		os.Exit(0)
 	}
-
-	// Load configuration early so we can configure logging
-	cfg := config.Load()
 
 	// Initialize structured logging
 	// LOG_FORMAT environment variable controls output: "json" or "text" (default)
